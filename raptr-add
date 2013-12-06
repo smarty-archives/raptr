@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -8,7 +8,7 @@ while [[ "$#" > 1 ]]; do
     -s|--section) section="$2"; shift 2 ;;
     -n|--name) name="$2"; shift 2 ;;
     -d|--directory) directory="$2"; shift 2 ;;
-    *);;
+    *) shift ;;
   esac
 done
 

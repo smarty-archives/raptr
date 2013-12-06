@@ -6,7 +6,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 while [[ "$#" > 1 ]]; do
   case "$1" in
     -g|--gpg) gpgkey="$2"; shift 2 ;;
-    *);;
+    *) shift ;;
   esac
 done
 
