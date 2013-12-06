@@ -3,11 +3,11 @@ set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-while [[ "$#" > 1 ]]; do
+while [[ "$#" > 0 ]]; do
   case "$1" in
-    -a|--archives) archives="$2"; shift 2 ;;
-    -s|--sections) sections="$2"; shift 2 ;;
-    -c|--cpus) cpus="$2"; shift 2 ;;
+    -a|--archives) archives="$2"; shift ;;
+    -s|--sections) sections="$2"; shift ;;
+    -c|--cpus) cpus="$2"; shift ;;
     *) shift ;;
   esac
 done
