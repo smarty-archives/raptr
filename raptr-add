@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -18,12 +18,12 @@ done
 [ -z "$directory" ] && echo "Missing required directory of packages to add." && exit 1
 [ ! -d "pool/$section" ] && echo "The section specified does not exist." && exit 1
 [ ! -d "$directory" ] && echo "The directory specified was not found." && exit 1
+[ -z "$(ls "$directory")" ] && echo "No package files found." && exit 1
 [[ "$name" =~ ( |\') ]] && echo "The package name cannot contain whitespace characters." && exit 1
 
-# what about bz, lzma, xz?
-files=$(ls "$directory/"*.{deb,dsc,debian.tar.gz,diff.gz,orig.tar.gz,deb-control,dsc-cached} 2> /dev/null || true)
-[ -z "$files" ] && echo "No package files found." && exit 1
-
 mkdir -p "pool/$section/${name::1}/$name"
+cp -r "$directory"/* "pool/$section/${name::1}/$name"
+
+echo "Add contents of \"$directory\" to \"$section\" pool."
 
 exit 0
