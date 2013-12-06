@@ -1,0 +1,17 @@
+Source: raptr
+Section: main
+Priority: extra
+Maintainer: Oliver, Jonathan <git@jonathanoliver.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: http://github.com/smartystreets/raptr
+Vcs-Git: git://github.com/smartystreets/raptr.git
+Vcs-Browser: http://github.com/smartystreets/raptr
+
+Package: raptr
+Architecture: all
+Depends: ${misc:Depends}, apt-utils, bzip2, gnupg
+Description: A simple, shell-based APT repository builder and updater.
+ Provides the ability to quickly and easily build standards-based, pool-capable
+ APT repositories without external dependencies.
+
