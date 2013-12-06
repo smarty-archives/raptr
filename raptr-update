@@ -26,7 +26,5 @@ for archive in $archives; do
     --output "dists/$archive/Release.gpg" -ba "dists/$archive/Release" || exit 1)
 done
 
-echo "'Release' file generation completed."
 echo "APT repository update completed."
-
 exit 0

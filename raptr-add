@@ -24,5 +24,4 @@ mkdir -p "pool/$section/${package::1}/$package"
 cp -r "$directory"/* "pool/$section/${package::1}/$package"
 
 echo "Added Debian package contents from \"$directory\" to \"$section\" pool."
-
 exit 0
