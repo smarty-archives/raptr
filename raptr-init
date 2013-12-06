@@ -16,9 +16,8 @@ done
 [ -z "$sections" ] && echo "Missing required list of sections." && exit 1
 [ -z "$cpus" ] && cpus="amd64 i386 source"
 
-origin="none" # TODO
-label="none" # TODO
-description="none" # TODO
+origin="$RAPTR_ORIGIN"; [ -z "$origin" ] && origin="raptr"
+description="$RAPTR_DESCRIPTION"; [ -z "$description" ] && description="raptr personal repository"
 
 echo "Initializing apt repository at \"$(pwd)\""
 mkdir -p conf db
@@ -53,7 +52,6 @@ EOF
 	APT::FTPArchive::Release::Archive "$archive";
 	APT::FTPArchive::Release::Components "$sections";
 	APT::FTPArchive::Release::Origin "$origin";
-	APT::FTPArchive::Release::Label "$label";
 	APT::FTPArchive::Release::Architectures "$cpus";
 	APT::FTPArchive::Release::Description "$description";
 EOF
@@ -70,7 +68,6 @@ for archive in $archives; do
 	Archive: $archive
 	Component: $section
 	Origin: $origin
-	Label: $label
 	Architecture: $cpu
 EOF
     done
