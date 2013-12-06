@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -e
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+[ ! -f conf/archives ] && echo "Not running in a repository directory" && exit 1
+archives=$(cat conf/archives)
+
+echo "Generating all indexes for APT repository."
+apt-ftparchive generate conf/apt-generate.conf
+
+for archive in $archives; do
+  echo "Generating 'Release' file for \"$archive\"."
+
+  apt-ftparchive -c "conf/apt-$archive-release.conf" release \
+    "dists/$archive" > "dists/$archive/Release"
+
+  # TODO: gpg key?
+  # gpg --output "dists/$archive/Release.gpg" -ba "dists/$archive/Release"  
+done
+
+echo "'Release' file generation completed."
+echo "APT repository update completed."

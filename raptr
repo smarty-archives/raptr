@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -e
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+case "$1" in
+  new) "$script_dir"/$0-new "${@:2}" ;;
+  add) "$script_dir"/$0-add "${@:2}" ;;
+  update) "$script_dir"/$0-update "${@:2}" ;;
+  *)
+    echo "$0 is a simple APT Repository generator.  It relies on apt-ftparchive and GPG to do the heavy lifting."
+    echo ""
+    echo "Example usage:"
+    echo "$0 new --archives \"production staging testing\" --sections \"public private\""
+    echo "$0 add --name \"my-package-name\" --dir \"/location/to/some/package-dir\" # can add deb and dsc-related stuff"
+    echo "$0 update gpg=\"mykey@domain.com\" # gpg key is optional"
+    echo ""
+    ;;
+
+esac
