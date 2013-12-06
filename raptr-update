@@ -3,9 +3,10 @@ set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-while [[ "$#" > 1 ]]; do
+while [[ "$#" > 0 ]]; do
   case "$1" in
-    -g|--gpg) gpgkey="$2"; shift 2 ;;
+    -g|--gpg) gpgkey="$2"; shift 1 ;;
+    -s|--store-key) storekey="1"; shift ;;
     *) shift ;;
   esac
 done
@@ -22,9 +23,14 @@ for archive in $archives; do
   apt-ftparchive -c "conf/apt-$archive-release.conf" release \
     "dists/$archive" > "dists/$archive/Release"
 
+  [ -f "dists/$archive/Release.gpg" ] && rm "dists/$archive/Release.gpg"
+
   [ -n "$gpgkey" ] && echo "Signing Release file" && (gpg --use-agent -u"$gpgkey" \
     --output "dists/$archive/Release.gpg" -ba "dists/$archive/Release" || exit 1)
+
 done
+
+[ -n "$gpgkey" ] && [ -n "$storekey" ] && gpg --export -a "$gpgkey" > pubkey.asc 
 
 echo "APT repository update completed."
 exit 0
