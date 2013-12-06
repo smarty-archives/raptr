@@ -9,11 +9,11 @@ raptr is a simple APT Repository builder and updater.  It relies on apt-ftparchi
 
 Example usage:
 
-$script_name new \\
+$script_name init \\
   --archives "production staging testing" \\
   --sections "public private"
 
-$script_name init \\
+$script_name add \\
   --section "public" \\
   --package "my-package-name" \\
   --dir "/location/to/some/package-dir"
