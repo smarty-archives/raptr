@@ -1,5 +1,5 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash -e
+script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ $# > 1 ]]; do
@@ -22,7 +22,6 @@ description="none" # TODO
 
 echo "Initializing apt repository at \"$(pwd)\""
 mkdir -p conf db
-
 echo "$archives" > conf/archives
 
 cat > conf/apt-generate.conf <<-EOF
@@ -82,3 +81,5 @@ echo "Creating directory pools for \"$sections\"."
 for section in $sections; do
   mkdir -p "pool/$section"
 done
+
+exit 0
