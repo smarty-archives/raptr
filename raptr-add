@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ "$#" > 1 ]]; do
   case "$1" in
     -s|--section) section="$2"; shift 2 ;;
-    -n|--name) name="$2"; shift 2 ;;
+    -p|--package) package="$2"; shift 2 ;;
     -d|--directory) directory="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
 
 [ -z "$section" ] && echo "Missing required name of section to which package should be added." && exit 1
-[ -z "$name" ] && echo "Missing required name of package to add." && exit 1
+[ -z "$package" ] && echo "Missing required name of package to add." && exit 1
 [ -z "$directory" ] && echo "Missing required directory of packages to add." && exit 1
 [ ! -d "pool/$section" ] && echo "The section specified does not exist." && exit 1
 [ ! -d "$directory" ] && echo "The directory specified was not found." && exit 1
 [ -z "$(ls "$directory")" ] && echo "No package files found." && exit 1
-[[ "$name" =~ ( |\') ]] && echo "The package name cannot contain whitespace characters." && exit 1
+[[ "$package" =~ ( |\') ]] && echo "The package name cannot contain whitespace characters." && exit 1
 
-mkdir -p "pool/$section/${name::1}/$name"
-cp -r "$directory"/* "pool/$section/${name::1}/$name"
+mkdir -p "pool/$section/${package::1}/$package"
+cp -r "$directory"/* "pool/$section/${package::1}/$package"
 
 echo "Added Debian package contents from \"$directory\" to \"$section\" pool."
 
