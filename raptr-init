@@ -5,23 +5,81 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ "$#" > 0 ]]; do
   case "$1" in
-    -s|--section) section="$2"; shift ;;
-    -p|--package) package="$2"; shift ;;
-    -d|--directory) directory="$2"; shift ;;
+    -a|--archives) archives="$2"; shift ;;
+    -s|--sections) sections="$2"; shift ;;
+    -c|--cpus) cpus="$2"; shift ;;
     *) shift ;;
   esac
 done
 
-[ -z "$section" ] && echo "Missing required name of section to which package should be added." && exit 1
-[ -z "$package" ] && echo "Missing required name of package to add." && exit 1
-[ -z "$directory" ] && echo "Missing required directory of packages to add." && exit 1
-[ ! -d "pool/$section" ] && echo "The section specified does not exist." && exit 1
-[ ! -d "$directory" ] && echo "The directory specified was not found." && exit 1
-[ -z "$(ls "$directory")" ] && echo "No package files found." && exit 1
-[[ "$package" =~ ( |\') ]] && echo "The package name cannot contain whitespace characters." && exit 1
+[ -z "$archives" ] && echo "Missing required list of archives." && exit 1
+[ -z "$sections" ] && echo "Missing required list of sections." && exit 1
+[ -z "$cpus" ] && cpus="amd64 i386 source"
 
-mkdir -p "pool/$section/${package::1}/$package"
-cp -r "$directory"/* "pool/$section/${package::1}/$package"
+origin="none" # TODO
+label="none" # TODO
+description="none" # TODO
 
-echo "Added Debian package contents from \"$directory\" to \"$section\" pool."
+echo "Initializing apt repository at \"$(pwd)\""
+mkdir -p conf db
+echo "$archives" > conf/archives
+
+cat > conf/apt-generate.conf <<-EOF
+	Dir {
+	    ArchiveDir "$(pwd)";
+	    CacheDir "$(pwd)/db";
+	};
+	Default {
+	    Packages::Compress ". gzip bzip2";
+	    Contents::Compress ". gzip bzip2";
+	    Sources::Compress ". gzip bzip2";
+	};
+	TreeDefault {
+	    Directory "pool/\$(SECTION)";
+	    SrcDirectory "pool/\$(SECTION)";
+	};
+EOF
+
+for archive in $archives; do
+  echo "Generating release-specific configuration for \"$archive\"."
+
+  cat >> conf/apt-generate.conf <<-EOF
+	Tree "dists/$archive" {
+	    Sections "$sections";
+	    Architectures "$cpus";
+	};
+EOF
+  cat > "conf/apt-$archive-release.conf" <<-EOF
+	APT::FTPArchive::Release::Archive "$archive";
+	APT::FTPArchive::Release::Components "$sections";
+	APT::FTPArchive::Release::Origin "$origin";
+	APT::FTPArchive::Release::Label "$label";
+	APT::FTPArchive::Release::Architectures "$cpus";
+	APT::FTPArchive::Release::Description "$description";
+EOF
+done
+
+for archive in $archives; do
+  echo "Creating sections \"$sections\" for archive \"$archive\"."
+  for section in $sections; do
+    for cpu in $cpus; do
+      parsed_cpu="binary-$cpu"
+      [ "$cpu" == "source" ] && parsed_cpu="$cpu"
+      mkdir -p "dists/$archive/$section/$parsed_cpu"
+      cat > "dists/$archive/$section/$parsed_cpu/Release" <<-EOF
+	Archive: $archive
+	Component: $section
+	Origin: $origin
+	Label: $label
+	Architecture: $cpu
+EOF
+    done
+  done
+done
+
+echo "Creating directory pools for \"$sections\"."
+for section in $sections; do
+  mkdir -p "pool/$section"
+done
+
 exit 0
