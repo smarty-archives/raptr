@@ -3,12 +3,11 @@ set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-while [[ $# > 1 ]]; do
-  key="$1"; shift
-  case $key in
-    -s|--section) section="$1"; shift ;;
-    -n|--name) name="$1"; shift ;;
-    -d|--directory) directory="$1"; shift ;;
+while [[ "$#" > 1 ]]; do
+  case "$1" in
+    -s|--section) section="$2"; shift 2 ;;
+    -n|--name) name="$2"; shift 2 ;;
+    -d|--directory) directory="$2"; shift 2 ;;
     *);;
   esac
 done
@@ -24,6 +23,6 @@ done
 mkdir -p "pool/$section/${name::1}/$name"
 cp -r "$directory"/* "pool/$section/${name::1}/$name"
 
-echo "Add contents of \"$directory\" to \"$section\" pool."
+echo "Added Debian package contents from \"$directory\" to \"$section\" pool."
 
 exit 0

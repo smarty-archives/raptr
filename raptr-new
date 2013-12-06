@@ -1,14 +1,12 @@
-#!/usr/bin/env bash
-set -e
+#!/usr/bin/env bash -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-while [[ $# > 1 ]]; do
-  key="$1"; shift
-  case $key in
-    -a|--archives) archives="$1"; shift ;;
-    -s|--sections) sections="$1"; shift ;;
-    -c|--cpus) cpus="$1"; shift ;;
+while [[ "$#" > 1 ]]; do
+  case "$1" in
+    -a|--archives) archives="$2"; shift 2 ;;
+    -s|--sections) sections="$2"; shift 2 ;;
+    -c|--cpus) cpus="$2"; shift 2 ;;
     *);;
   esac
 done
