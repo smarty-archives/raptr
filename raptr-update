@@ -3,7 +3,14 @@ set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-[ ! -f conf/archives ] && echo "Not running in a repository directory" && exit 1
+while [[ "$#" > 1 ]]; do
+  case "$1" in
+    -g|--gpg) gpgkey="$2"; shift 2 ;;
+    *);;
+  esac
+done
+
+[ ! -f conf/archives ] && echo "Command must be executed from within an APT repository root directory" && exit 1
 archives=$(cat conf/archives)
 
 echo "Generating all indexes for APT repository."
@@ -15,8 +22,8 @@ for archive in $archives; do
   apt-ftparchive -c "conf/apt-$archive-release.conf" release \
     "dists/$archive" > "dists/$archive/Release"
 
-  # TODO: gpg key?
-  # gpg --output "dists/$archive/Release.gpg" -ba "dists/$archive/Release"  
+  [ -n "$gpgkey" ] && echo "Signing Release file" && (gpg --use-agent -u"$gpgkey" \
+    --output "dists/$archive/Release.gpg" -ba "dists/$archive/Release" || exit 1)
 done
 
 echo "'Release' file generation completed."
