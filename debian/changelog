@@ -1,3 +1,14 @@
+raptr (0.6.1) unstable; urgency=low
+
+  [ Oliver, Jonathan ]
+  * Correct script parameter names.
+  * Whitespace.
+  * Following symlinks.
+  * List of archives if being extracted from the set of configuration files.
+  * Expanded description in control file.
+  * Displaying extra command option in docs.
+  * Added bash-compatible line breaks to docs.
+
 raptr (0.6) unstable; urgency=low
 
   * Initial Release.
