@@ -11,7 +11,8 @@ Example usage:
 
 $script_name init \\
   --archives "production staging testing" \\
-  --sections "public private"
+  --sections "public private" \\
+  --cpus "amd64 i386 source"
 
 $script_name add \\
   --section "public" \\
