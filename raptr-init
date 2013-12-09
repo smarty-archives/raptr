@@ -21,7 +21,6 @@ description="$RAPTR_DESCRIPTION"; [ -z "$description" ] && description="raptr pe
 
 echo "Initializing apt repository at \"$(pwd)\""
 mkdir -p conf db
-echo "$archives" > conf/archives
 
 cat > conf/apt-generate.conf <<-EOF
 	Dir {

@@ -11,8 +11,8 @@ while [[ "$#" > 0 ]]; do
   esac
 done
 
-[ ! -f conf/archives ] && echo "Command must be executed from within an APT repository root directory" && exit 1
-archives=$(cat conf/archives)
+archives=$(ls conf/apt-*-release.conf | sed -r 's/conf\/apt-(.*)-release\.conf/\1/')
+[ -z "$archives" ] && echo "Command must be executed from within an APT repository root directory" && exit 1
 
 echo "Generating all indexes for APT repository."
 apt-ftparchive generate conf/apt-generate.conf
