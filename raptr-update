@@ -6,7 +6,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 while [[ "$#" > 0 ]]; do
   case "$1" in
     -g|--gpg) gpgkey="$2"; shift 1 ;;
-    -s|--store-key) storekey="1"; shift ;;
+    -e|--export-public-key) exportkey="1"; shift ;;
     *) shift ;;
   esac
 done
@@ -30,7 +30,7 @@ for archive in $archives; do
 
 done
 
-[ -n "$gpgkey" ] && [ -n "$storekey" ] && gpg --export -a "$gpgkey" > pubkey.asc 
+[ -n "$gpgkey" ] && [ -n "$exportkey" ] && gpg --export -a "$gpgkey" > pubkey.asc 
 
 echo "APT repository update completed."
 exit 0

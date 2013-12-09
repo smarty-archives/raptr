@@ -16,11 +16,11 @@ $script_name init \\
 $script_name add \\
   --section "public" \\
   --package "my-package-name" \\
-  --dir "/location/to/some/package-dir"
+  --directory "/location/to/some/package-dir"
 
 $script_name update \\
-  --gpg="mykey@domain.com" # optional key
-  --store-key # used to put the store the key *in* the repository for convenience
+  --gpg="mykey@domain.com"
+  --export-public-key
 
 EOF
 }

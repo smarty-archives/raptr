@@ -12,10 +12,10 @@ raptr init
 raptr add 
   --section "public" 
   --package "my-package-name" 
-  --dir "/location/to/some/package-dir"
+  --directory "/location/to/some/package-dir"
 
 raptr update 
-  --gpg="mykey@domain.com" # optional key
-  --store-key # used to put the store the key *in* the repository for convenience
+  --gpg="mykey@domain.com"
+  --export-public-key
 
 
