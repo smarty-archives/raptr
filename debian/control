@@ -12,6 +12,6 @@ Package: raptr
 Architecture: all
 Depends: ${misc:Depends}, apt-utils, bzip2, gnupg
 Description: A simple, shell-based APT repository builder and updater.
- Provides the ability to quickly and easily build standards-based, pool-capable
+ Provides the ability to quickly and easily build standards-compliant, pool-capable, version-capable
  APT repositories without external dependencies.
 
