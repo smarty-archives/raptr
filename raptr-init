@@ -5,9 +5,9 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ "$#" > 0 ]]; do
   case "$1" in
-    -a|--archives) archives="$2"; shift ;;
-    -s|--sections) sections="$2"; shift ;;
-    -c|--cpus) cpus="$2"; shift ;;
+    -a|--archives|--archives=) archives="$2"; shift ;;
+    -s|--sections|--sections=) sections="$2"; shift ;;
+    -c|--cpus|--cpus=) cpus="$2"; shift ;;
     *) shift ;;
   esac
 done

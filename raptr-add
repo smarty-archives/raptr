@@ -5,10 +5,10 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ "$#" > 0 ]]; do
   case "$1" in
-    -s|--section) section="$2"; shift ;;
-    -p|--package) package="$2"; shift ;;
-    -d|--directory) directory="$2"; shift ;;
-	-b|--binary-only) binary_only="true"; shift ;;
+    -s|--section|--section=) section="$2"; shift ;;
+    -p|--package|--package=) package="$2"; shift ;;
+    -d|--directory|--directory=) directory="$2"; shift ;;
+	-b|--binary-only|--binary-only) binary_only="true"; shift ;;
     *) shift ;;
   esac
 done
