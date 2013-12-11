@@ -1,5 +1,13 @@
+raptr (0.6.2) unstable; urgency=low
+
+  [ Oliver, Jonathan ]
+  * New ability to only add compiled debian files to repository.
+
+ -- Oliver, Jonathan <git@jonathanoliver.com>  Wed, 11 Dec 2013 12:35:53 +0000
+
 raptr (0.6.1) unstable; urgency=low
 
+  [ Oliver, Jonathan ]
   * Correct script parameter names.
   * Whitespace.
   * Following symlinks.

@@ -8,6 +8,7 @@ while [[ "$#" > 0 ]]; do
     -s|--section) section="$2"; shift ;;
     -p|--package) package="$2"; shift ;;
     -d|--directory) directory="$2"; shift ;;
+	-b|--binary-only) binary_only="true"; shift ;;
     *) shift ;;
   esac
 done
@@ -21,7 +22,9 @@ done
 [[ "$package" =~ ( |\') ]] && echo "The package name cannot contain whitespace characters." && exit 1
 
 mkdir -p "pool/$section/${package::1}/$package"
-cp -r "$directory"/* "pool/$section/${package::1}/$package"
+if [ -n "$binary_only" == "true" ]; then cp -r "$directory"/*.deb "pool/$section/${package::1}/$package"
+else cp -r "$directory"/* "pool/$section/${package::1}/$package"
+fi
 
 echo "Added Debian package contents from \"$directory\" to \"$section\" pool."
 exit 0
