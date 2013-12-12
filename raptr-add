@@ -22,7 +22,7 @@ done
 [[ "$package" =~ ( |\') ]] && echo "The package name cannot contain whitespace characters." && exit 1
 
 mkdir -p "pool/$section/${package::1}/$package"
-if [ -n "$binary_only" == "true" ]; then cp -r "$directory"/*.deb "pool/$section/${package::1}/$package"
+if [ -n "$binary_only" ]; then cp -r "$directory"/*.deb "pool/$section/${package::1}/$package"
 else cp -r "$directory"/* "pool/$section/${package::1}/$package"
 fi
 
