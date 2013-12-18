@@ -16,27 +16,30 @@ done
 [ ! -d ./dists ] && echo "The command must be executed inside of an active repository." && exit 1
 [ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && exit 1
 
-all_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*)/\1/g')"
-all_distributions="$(cd dists; ls -d *)"
-all_sections="$(cd pool; ls -d *)"
+all_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
+all_distributions="$(cd dists; ls -d *) | tr '\n' ' '"
+all_sections="$(cd pool; ls -d *) | tr '\n' ' '"
 
+# TODO: wildcards
+#[[ "$t" == "*/"* ]] && continue; # begins with */, grab the right side and find within all_sections
+#[[ "$t" == *"/*" ]] && continue; # ends with /*, grab the left side and find within all_sections
+[[ ! "$all_targets" == *"$target"* ]] && "The target '$t' does not exist." && exit 1
+distribution="$(echo "$target" | sed -r 's/(.*)\/(.*)/\1/')"
+section="$(echo "$target" | sed -r 's/(.*)\/(.*)/\2/')"
 
+[ -z "$(ls $package 2> /dev/null)" ] && echo "The package to add '$package' could not be found." && exit 1
+package_name=$(basename "$package" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|dsc\)/\1/p')
+[ -z "$package_name" ] && echo "The file specified '$package' doesn't appear to be a debian package." && exit 1
 
-exit 0
-
-
-
-
-[ -z "$directory" ] && echo "Missing required directory of packages to add." && exit 1
-[ ! -d "pool/$section" ] && echo "The section specified does not exist." && exit 1
-[ ! -d "$directory" ] && echo "The directory specified was not found." && exit 1
-[ -z "$(ls "$directory")" ] && echo "No package files found." && exit 1
-[[ "$package" =~ ( |\') ]] && echo "The package name cannot contain whitespace characters." && exit 1
-
-mkdir -p "pool/$section/${package::1}/$package"
-if [ -n "$binary_only" ]; then cp -r "$directory"/*.deb "pool/$section/${package::1}/$package"
-else cp -r "$directory"/* "pool/$section/${package::1}/$package"
+if [[ "$package" == *"deb" ]]; then
+	echo "Binary Package"
+else
+	echo "Source Package"
 fi
 
-echo "Added Debian package contents from \"$directory\" to \"$section\" pool."
+mkdir -p "pool/$section/${package_name::1}/$package_name"
+#if [ -n "$binary_only" ]; then cp -r "$directory"/*.deb "pool/$section/${package::1}/$package"
+#else cp -r "$directory"/* "pool/$section/${package::1}/$package"
+#fi
+echo "Added Debian package '${package_name} to '$section' pool."
 exit 0
