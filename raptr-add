@@ -32,9 +32,12 @@ package_name=$(basename "$package" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|ds
 [ -z "$package_name" ] && echo "The file specified '$package' doesn't appear to be a debian package." && exit 1
 
 if [[ "$package" == *"deb" ]]; then
-	echo "Binary Package"
+	arch=$(basename "$package" | sed -n 's/.*_.*_\([a-z0-9]\+\).\(deb\|dsc\)/\1/p')
+	[ ! -d "dists/$distribution/$section/binary-$arch" ] \
+		&& echo "Architecture '$arch' does not exist in the repository." && exit 1
 else
-	echo "Source Package"
+	[ ! -d "dists/$distribution/$section/source" ] \
+		&& echo "Source architecture doesn't exist in the repository." && exit 1
 fi
 
 mkdir -p "pool/$section/${package_name::1}/$package_name"
