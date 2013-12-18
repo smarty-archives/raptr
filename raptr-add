@@ -5,16 +5,28 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ "$#" > 0 ]]; do
   case "$1" in
-    -s|--section|--section=) section="$2"; shift ;;
+    -t|--target|--target=) target="$2"; shift ;;
     -p|--package|--package=) package="$2"; shift ;;
-    -d|--directory|--directory=) directory="$2"; shift ;;
-	-b|--binary-only|--binary-only) binary_only="true"; shift ;;
-    *) shift ;;
+	*) shift ;;
   esac
 done
 
-[ -z "$section" ] && echo "Missing required name of section to which package should be added." && exit 1
-[ -z "$package" ] && echo "Missing required name of package to add." && exit 1
+[ -z "$target" ] && echo "Missing required target to which package should be added." && exit 1
+[ -z "$package" ] && echo "Missing required package to add." && exit 1
+[ ! -d ./dists ] && echo "The command must be executed inside of an active repository." && exit 1
+[ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && exit 1
+
+all_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*)/\1/g')"
+all_distributions="$(cd dists; ls -d *)"
+all_sections="$(cd pool; ls -d *)"
+
+
+
+exit 0
+
+
+
+
 [ -z "$directory" ] && echo "Missing required directory of packages to add." && exit 1
 [ ! -d "pool/$section" ] && echo "The section specified does not exist." && exit 1
 [ ! -d "$directory" ] && echo "The directory specified was not found." && exit 1
