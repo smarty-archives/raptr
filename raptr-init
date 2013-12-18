@@ -22,40 +22,6 @@ description="$RAPTR_DESCRIPTION"; [ -z "$description" ] && description="raptr pe
 echo "Initializing apt repository at \"$(pwd)\""
 mkdir -p conf db
 
-cat > conf/apt-generate.conf <<-EOF
-	Dir {
-	    ArchiveDir "$(pwd)";
-	    CacheDir "$(pwd)/db";
-	};
-	Default {
-	    Packages::Compress ". gzip bzip2";
-	    Contents::Compress ". gzip bzip2";
-	    Sources::Compress ". gzip bzip2";
-	};
-	TreeDefault {
-	    Directory "pool/\$(SECTION)";
-	    SrcDirectory "pool/\$(SECTION)";
-	};
-EOF
-
-for archive in $archives; do
-  echo "Generating release-specific configuration for \"$archive\"."
-
-  cat >> conf/apt-generate.conf <<-EOF
-	Tree "dists/$archive" {
-	    Sections "$sections";
-	    Architectures "$cpus";
-	};
-EOF
-  cat > "conf/apt-$archive-release.conf" <<-EOF
-	APT::FTPArchive::Release::Archive "$archive";
-	APT::FTPArchive::Release::Components "$sections";
-	APT::FTPArchive::Release::Origin "$origin";
-	APT::FTPArchive::Release::Architectures "$cpus";
-	APT::FTPArchive::Release::Description "$description";
-EOF
-done
-
 for archive in $archives; do
   echo "Creating sections \"$sections\" for archive \"$archive\"."
   for section in $sections; do
@@ -64,11 +30,11 @@ for archive in $archives; do
       [ "$cpu" == "source" ] && parsed_cpu="$cpu"
       mkdir -p "dists/$archive/$section/$parsed_cpu"
       cat > "dists/$archive/$section/$parsed_cpu/Release" <<-EOF
-	Archive: $archive
-	Component: $section
-	Origin: $origin
-	Architecture: $cpu
-EOF
+		Archive: $archive
+		Component: $section
+		Origin: $origin
+		Architecture: $cpu
+		EOF
     done
   done
 done
