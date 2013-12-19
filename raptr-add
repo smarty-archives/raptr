@@ -16,6 +16,12 @@ done
 [ ! -d ./dists ] && echo "The command must be executed inside of an active repository." && exit 1
 [ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && exit 1
 
+function gzip_and_bzip_file() {
+	filename="$1"
+	gzip -c9 "${filename}" > "${filename}.gz"
+	bzip2 -c9 "${filename}" > "${filename}.bz2"
+}
+
 all_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
 all_distributions="$(cd dists; ls -d *) | tr '\n' ' '"
 all_sections="$(cd pool; ls -d *) | tr '\n' ' '"
@@ -27,47 +33,57 @@ all_sections="$(cd pool; ls -d *) | tr '\n' ' '"
 distribution="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\1/')"
 section="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\2/')"
 
-# TODO: maybe split apart on "_" ?
-# get package name, version, architecture, and source/binary
-
 [ -z "$(ls "${package}" 2> /dev/null)" ] && echo "The package to add '${package}' could not be found." && exit 1
 filename="$(basename "${package}")"
 package_name=$(echo "${filename}" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|dsc\)/\1/p')
+package_extension=${filename##*.}
 [ -z "${package_name}" ] && echo "The file specified package '${package}' doesn't appear to be a debian package." && exit 1
 
 target_directory="dists/${distribution}/${section}"
 pool_directory="pool/${section}/${package_name::1}/${package_name}"
-mkdir -p "${pool_directory}"
+workspace_directory="workspace/${pool_directory}"
+mkdir -p "${pool_directory}" "${workspace_directory}"
 
-if [[ "${package}" == *"deb" ]]; then
+# TODO: what about architecture: all, e.g. bash and python scripts?
+
+if [ "${package_extension}" == "deb" ]; then
 	arch=$(basename "${package}" | sed -n 's/.*_.*_\([a-z0-9]\+\).\(deb\|dsc\)/\1/p')
 	binary_directory="${target_directory}/binary-${arch}"
 	packages_filename="${binary_directory}/Packages"
-	workspace_directory="workspace/${pool_directory}"
 	content_filename="${target_directory}/Contents-${arch}"
 
 	[ ! -d "${binary_directory}" ] \
 		&& echo "Architecture '${arch}' does not exist in the repository." && exit 1
 
 	[ -n "$(grep "${filename}" "${packages_filename}")" ] \
-		&& echo "Package already added; skipping." && exit 0
+		&& echo "Binary package already added; skipping." && exit 0
 
-	rm -rf "${workspace_directory}" && mkdir -p "${workspace_directory}"
 	cp "${package}" "${workspace_directory}"
 	$(cd workspace; dpkg-scanpackages "${pool_directory}" >> "../${packages_filename}")
-	gzip -c9 "${packages_filename}" > "${packages_filename}.gz"
-	bzip2 -c9 "${packages_filename}" > "${packages_filename}.bz2"
+	gzip_and_bzip_file "${packages_filename}"
 
 	# TODO: read contents of deb file and append to Contents-$arch then sort by filename | unique
 
 	mv "${workspace_directory}"/* "${pool_directory}"
 	$(cd workspace; rmdir "${pool_directory}")
-else
+elif [ "${package_extension}" == "dsc" ]; then
+	package_without_extension="${package%.*}"
 	source_directory="${target_directory}/source"
+	sources_filename="${source_directory}/Sources"
+
 	[ ! -d "${source_directory}" ] \
 		&& echo "Source architecture doesn't exist in the repository." && exit 1
 
-	# dpkg-scansources
+	[ -n "$(grep "${filename}" "${sources_filename}")" ] \
+		&& echo "Source package already added; skipping." && exit 0
+
+	# TODO: copy associated files: typically packagename_version.orig.* (tar.gz, tar.bz2, etc.) and package (without extension).debian.tar.gz
+	cp "${package_without_extension}".* "${workspace_directory}"
+	gzip_and_bzip_file "${sources_filename}"
+	$(cd workspace; dpkg-scansources "${pool_directory}" >> "../${sources_filename}")
+
+	mv "${workspace_directory}"/* "${pool_directory}"
+	$(cd workspace; rmdir "${pool_directory}")
 fi
 
 echo "Added Debian '${package_name}' package to '${section}' pool."
