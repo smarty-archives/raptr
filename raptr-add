@@ -182,7 +182,6 @@ function index_binary_package_architecture() {
 	local workspace_path="${workspace_root}/${pool_directory}"
 
 	echo "Adding '${package_name}' to '${cpu_path}'."
-
 	[ -f "${packages_index_path}" ] && [ -n "$(grep "${package_filename}" "${packages_index_path}")" ] \
 		&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && return 0
 
@@ -191,10 +190,8 @@ function index_binary_package_architecture() {
 	$( cd "${workspace_root}"; dpkg-scanpackages "${pool_directory}" >> "${packages_index_path}" )
 	gzip_and_bzip_file "${packages_index_path}"
 	rm -rf "${workspace_root}"
-
-	[ "$(readlink -m "${package_path}")" != "$(readlink -m "${pool_directory}/${package_filename}")" ] && \
-		cp "${package_path}" "${pool_directory}"
-
+	[ ! -f "${pool_directory}/${package_filename}" ] && cp "${package_path}" "${pool_directory}"
+	
 	return 0
 }
 function gzip_and_bzip_file() {
