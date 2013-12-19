@@ -27,22 +27,36 @@ all_sections="$(cd pool; ls -d *) | tr '\n' ' '"
 distribution="$(echo "$target" | sed -r 's/(.*)\/(.*)/\1/')"
 section="$(echo "$target" | sed -r 's/(.*)\/(.*)/\2/')"
 
+# TODO: maybe split apart on "_" ?
+# get package name, version, architecture, and source/binary
+
 [ -z "$(ls $package 2> /dev/null)" ] && echo "The package to add '$package' could not be found." && exit 1
 package_name=$(basename "$package" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|dsc\)/\1/p')
 [ -z "$package_name" ] && echo "The file specified '$package' doesn't appear to be a debian package." && exit 1
+
+echo "$package_version"
+exit 0
+
+mkdir -p "pool/$section/${package_name::1}/$package_name"
 
 if [[ "$package" == *"deb" ]]; then
 	arch=$(basename "$package" | sed -n 's/.*_.*_\([a-z0-9]\+\).\(deb\|dsc\)/\1/p')
 	[ ! -d "dists/$distribution/$section/binary-$arch" ] \
 		&& echo "Architecture '$arch' does not exist in the repository." && exit 1
+
+	rm -rf workspace && mkdir -p workspace
+	cp "$package" workspace
+	dpkg-scanpackages workspace >> "dists/$distribution/$section/binary-$arch/Packages"
+	# read contents and append to Contents-$arch then sort by filename | unique
+
+	mv workspace/* "pool/$section/${package_name::1}/$package_name"
+	rmdir workspace
 else
 	[ ! -d "dists/$distribution/$section/source" ] \
 		&& echo "Source architecture doesn't exist in the repository." && exit 1
+
+	# dpkg-scansources
 fi
 
-mkdir -p "pool/$section/${package_name::1}/$package_name"
-#if [ -n "$binary_only" ]; then cp -r "$directory"/*.deb "pool/$section/${package::1}/$package"
-#else cp -r "$directory"/* "pool/$section/${package::1}/$package"
-#fi
 echo "Added Debian package '${package_name} to '$section' pool."
 exit 0
