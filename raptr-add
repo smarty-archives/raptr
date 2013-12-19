@@ -131,16 +131,14 @@ function index_binary_package() {
 	local available_cpus="$(cd "dist/${archive}/${section}/"; ls -d binary-* | \
 		sed 's/binary-\(.*\)/\1/' | tr '\n' ' ' )"
 
-	local package_name="" # TODO
-	local package_version="" # TODO
-	local cpu="" # TODO
+	eval "$(extract_package_name_and_version "${package_path}")"
 
-	if [ "${cpu}" == "all" ]; then
+	if [ "${package_cpu}" == "all" ]; then
 		for c in ${available_cpus}; do index_binary_package_architecture "$@" "${c}"; done
-	elif [[ ! " ${available_cpus} " == *" ${cpu} "* ]]; then
+	elif [[ ! " ${available_cpus} " == *" ${package_cpu} "* ]]; then
 		echo "The package's target architecture is not supported; skipping" >&2 && return 0 # not an error
 	else
-		index_binary_package_architecture "$@" "${cpu}"
+		index_binary_package_architecture "$@" "${package_cpu}"
 	fi
 
 	return 0
@@ -150,8 +148,6 @@ function extract_package_name_and_version() {
 	local package_filename="$(basename "${package_path}")"
 	local package_extension="${package_filename##*.}"
 	local package_meta=( $(echo "${package_filename%.*}" | tr "_" " ") )
-
-	# [ -f "${package_path}" ] && echo "The package specified '${package_path}' does not exist." >&2 && return 1
 
 	cat <<-EOF
 		local package_filename="${package_filename}"
