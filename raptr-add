@@ -83,7 +83,7 @@ function index_packages() {
 	return 0
 }
 function index_package() {
-	local package="$1"
+	local package_path="$1"
 	local archive="$2"
 	local section="$3"
 
@@ -96,35 +96,31 @@ function index_package() {
 	# 6. non-native, architecture-independent, binary package, e.g. pkg_1.0.0-1ubuntu1~asdf_all.deb
 
 	# TODO: what characters are allowed in the version field of the filename? plus characters?
-
-
-	return 0
-}
-function discover_package() {
-	local package_path="$1"
-	local package_extension="${package_path##*.}"
-
-	if [[ "${package_path}" == *"/*" ]]; then discover_package_directory "${package_path}"
-	elif [ "${package_extension}" == "deb" ]; then discover_binary_package "${package_path}"
-	elif [ "${package_extension}" == "dsc" ]; then discover_source_package "${package_path}"
+	if [[ "${package_path}" == *"/*" ]]; then index_package_directory "${package_path}"
+	elif [ -d "${package_path}" ]; then index_package_directory "${package_path}"
+	elif [ "${package_extension}" == "deb" ]; then index_binary_package "${package_path}"
+	elif [ "${package_extension}" == "dsc" ]; then index_source_package "${package_path}"
 	else echo "Could not determine package contents; make sure it's a 'deb' or 'dsc' file." >&2 && return 1
 	fi
 
 	return 0
 }
-function discover_package_directory() {
+function index_package_directory() {
+	local package_path="$1"
 	return 0
 }
-function discover_source_package() {
+function index_source_package() {
+	local package_path="$1"
 	local package_filename="$(basename "${package_path}")"
 	return 0
 }
-function discover_binary_package() {
+function index_binary_package() {
+	local package_path="$1"
 	local package_filename="$(basename "${package_path}")"
 	return 0
 }
 function gzip_and_bzip_file() {
-	local uncompressed_file = "$1"
+	local uncompressed_file="$1"
 	gzip -c9 "${uncompressed_file}" > "${uncompressed_file}.gz"
 	bzip2 -c9 "${uncompressed_file}" > "${uncompressed_file}.bz2"
 	return 0
