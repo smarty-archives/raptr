@@ -101,6 +101,13 @@ function index_package() {
 }
 function index_package_directory() {
 	local package_path="$1"
+
+	for filename in ${package_path}; do
+		local extension="${filename##*.}"
+		[ "${extension}" != "deb" ] && [ "${extension}" != "dsc" ] && continue
+		index_package "${filename}"
+	done
+
 	return 0
 }
 function index_source_package() {
