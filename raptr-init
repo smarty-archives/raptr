@@ -1,47 +1,44 @@
 #!/usr/bin/env bash
 set -e
-script_name="$(basename "$BASH_SOURCE")"
+script_name="$(basename "${BASH_SOURCE}")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ "$#" > 0 ]]; do
-  case "$1" in
-    -a|--archives|--archives=) archives="$2"; shift ;;
-    -s|--sections|--sections=) sections="$2"; shift ;;
-    -c|--cpus|--cpus=) cpus="$2"; shift ;;
-    *) shift ;;
-  esac
+	case "$1" in
+		-a|--archives|--archives=) archives="$2"; shift ;;
+		-s|--sections|--sections=) sections="$2"; shift ;;
+		-c|--cpus|--cpus=) cpus="$2"; shift ;;
+		*) shift ;;
+	esac
 done
 
-[ -z "$archives" ] && echo "Missing required list of archives." && exit 1
-[ -z "$sections" ] && echo "Missing required list of sections." && exit 1
-[ -z "$cpus" ] && cpus="amd64 i386 source"
+[ -z "${archives}" ] && echo "Missing required list of archives." && exit 1
+[ -z "${sections}" ] && echo "Missing required list of sections." && exit 1
+[ -z "${cpus}" ] && cpus="amd64 i386 source"
 
-origin="$RAPTR_ORIGIN"; [ -z "$origin" ] && origin="raptr"
-description="$RAPTR_DESCRIPTION"; [ -z "$description" ] && description="raptr personal repository"
+origin="$RAPTR_ORIGIN"; [ -z "${origin}" ] && origin="raptr"
+description="$RAPTR_DESCRIPTION"; [ -z "${description}" ] && description="raptr personal repository"
 
-echo "Initializing apt repository at \"$(pwd)\""
-mkdir -p conf db
+echo "Initializing apt repository at '$(pwd)'."
 
 for archive in $archives; do
-  echo "Creating sections \"$sections\" for archive \"$archive\"."
-  for section in $sections; do
-    for cpu in $cpus; do
-      parsed_cpu="binary-$cpu"
-      [ "$cpu" == "source" ] && parsed_cpu="$cpu"
-      mkdir -p "dists/$archive/$section/$parsed_cpu"
-      cat > "dists/$archive/$section/$parsed_cpu/Release" <<-EOF
-		Archive: $archive
-		Component: $section
-		Origin: $origin
-		Architecture: $cpu
-		EOF
-    done
-  done
+	echo "Creating sections '${sections}' for archive '${archive}'."
+	for section in $sections; do
+		for cpu in $cpus; do
+			parsed_cpu="binary-${cpu}"
+			[ "${cpu}" == "source" ] && parsed_cpu="${cpu}"
+			mkdir -p "dists/${archive}/${section}/${parsed_cpu}"
+			cat > "dists/${archive}/${section}/${parsed_cpu}/Release" <<-EOF
+				Archive: ${archive}
+				Component: ${section}
+				Origin: ${origin}
+				Architecture: ${cpu}
+			EOF
+		done
+	done
 done
 
-echo "Creating directory pools for \"$sections\"."
-for section in $sections; do
-  mkdir -p "pool/$section"
-done
+echo "Creating directory pools for '${sections}'."
+for section in $sections; do mkdir -p "pool/${section}"; done
 
 exit 0
