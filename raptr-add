@@ -108,11 +108,30 @@ function index_package_directory() {
 }
 function index_source_package() {
 	local package_path="$1"
+	local package_filename="$(basename "${package_path}")"
 	local archive="$2"
 	local section="$3"
 
 	[ ! -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
 	eval "$(extract_package_name_and_version "${package_path}")"
+
+	local sources_path="dists/${archive}/${section}/source"
+	local sources_index_path="$(readlink -m "${sources_path}/Source")"
+	local pool_directory="pool/${section}/${package_name::1}/${package_name}"
+	local workspace_root="/tmp/raptr/workspaces/$$"
+	local workspace_path="${workspace_root}/${pool_directory}"
+
+	echo "Adding '${package_name}' to '${sources_path}'."
+	[ -f "${sources_index_path}" ] && [ -n "$(grep "${package_filename}" "${sources_index_path}")" ] \
+		&& echo "Source package already added to target directory '${sources_path}'; skipping." >&2 && return 0
+
+	mkdir -p "${sources_path}" "${workspace_path}" "${pool_directory}"
+	ln -s "${package_path}" "${workspace_path}"
+	for f in ${source_filenames}; do ln -s "${f}" "${workspace_path}"; done
+	$( cd "${workspace_root}"; dpkg-scansources "${pool_directory}" >> "${sources_index_path}" )
+	gzip_and_bzip_file "${sources_index_path}"
+	cp "${workspace_path}"/* "${pool_directory}"
+	rm -rf "${workspace_root}"
 
 	return 0
 }
@@ -186,12 +205,17 @@ function index_binary_package_architecture() {
 		&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && return 0
 
 	mkdir -p "${pool_directory}" "${workspace_path}"
-	ln -s "$(readlink -m "${package_path}")" "${workspace_path}"
+	ln -s "${package_path}" "${workspace_path}"
 	$( cd "${workspace_root}"; dpkg-scanpackages "${pool_directory}" >> "${packages_index_path}" )
 	gzip_and_bzip_file "${packages_index_path}"
+
+	# TODO: generate dists/archive/section/Contents-architecture file
+	# grab all the files this installs and then sort | unique out to the same file
+	# gzip, bzip2 Contents-architecture file
+
 	rm -rf "${workspace_root}"
 	[ ! -f "${pool_directory}/${package_filename}" ] && cp "${package_path}" "${pool_directory}"
-	
+
 	return 0
 }
 function gzip_and_bzip_file() {
