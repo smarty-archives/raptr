@@ -17,9 +17,8 @@ done
 [ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && exit 1
 
 function gzip_and_bzip_file() {
-	filename="$1"
-	gzip -c9 "${filename}" > "${filename}.gz"
-	bzip2 -c9 "${filename}" > "${filename}.bz2"
+	gzip -c9 "$1" > "$1.gz"
+	bzip2 -c9 "$1" > "$1.bz2"
 }
 
 all_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
