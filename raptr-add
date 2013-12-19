@@ -11,8 +11,8 @@ while [[ "$#" > 0 ]]; do
   esac
 done
 
-[ -z "$target" ] && echo "Missing required target to which package should be added." && exit 1
-[ -z "$package" ] && echo "Missing required package to add." && exit 1
+[ -z "${target}" ] && echo "Missing required target to which package should be added." && exit 1
+[ -z "${package}" ] && echo "Missing required package to add." && exit 1
 [ ! -d ./dists ] && echo "The command must be executed inside of an active repository." && exit 1
 [ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && exit 1
 
@@ -23,40 +23,52 @@ all_sections="$(cd pool; ls -d *) | tr '\n' ' '"
 # TODO: wildcards
 #[[ "$t" == "*/"* ]] && continue; # begins with */, grab the right side and find within all_sections
 #[[ "$t" == *"/*" ]] && continue; # ends with /*, grab the left side and find within all_sections
-[[ ! "$all_targets" == *"$target"* ]] && "The target '$t' does not exist." && exit 1
-distribution="$(echo "$target" | sed -r 's/(.*)\/(.*)/\1/')"
-section="$(echo "$target" | sed -r 's/(.*)\/(.*)/\2/')"
+[[ ! "${all_targets}" == *"${target}"* ]] && "The target '${t}' does not exist." && exit 1
+distribution="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\1/')"
+section="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\2/')"
 
 # TODO: maybe split apart on "_" ?
 # get package name, version, architecture, and source/binary
 
-[ -z "$(ls $package 2> /dev/null)" ] && echo "The package to add '$package' could not be found." && exit 1
-package_name=$(basename "$package" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|dsc\)/\1/p')
-[ -z "$package_name" ] && echo "The file specified '$package' doesn't appear to be a debian package." && exit 1
+[ -z "$(ls "${package}" 2> /dev/null)" ] && echo "The package to add '${package}' could not be found." && exit 1
+filename="$(basename "${package}")"
+package_name=$(echo "${filename}" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|dsc\)/\1/p')
+[ -z "${package_name}" ] && echo "The file specified package '${package}' doesn't appear to be a debian package." && exit 1
 
-echo "$package_version"
-exit 0
+target_directory="dists/${distribution}/${section}"
+pool_directory="pool/${section}/${package_name::1}/${package_name}"
+mkdir -p "${pool_directory}"
 
-mkdir -p "pool/$section/${package_name::1}/$package_name"
+if [[ "${package}" == *"deb" ]]; then
+	arch=$(basename "${package}" | sed -n 's/.*_.*_\([a-z0-9]\+\).\(deb\|dsc\)/\1/p')
+	binary_directory="${target_directory}/binary-${arch}"
+	packages_filename="${binary_directory}/Packages"
+	workspace_directory="workspace/${pool_directory}"
+	content_filename="${target_directory}/Contents-${arch}"
 
-if [[ "$package" == *"deb" ]]; then
-	arch=$(basename "$package" | sed -n 's/.*_.*_\([a-z0-9]\+\).\(deb\|dsc\)/\1/p')
-	[ ! -d "dists/$distribution/$section/binary-$arch" ] \
-		&& echo "Architecture '$arch' does not exist in the repository." && exit 1
+	[ ! -d "${binary_directory}" ] \
+		&& echo "Architecture '${arch}' does not exist in the repository." && exit 1
 
-	rm -rf workspace && mkdir -p workspace
-	cp "$package" workspace
-	dpkg-scanpackages workspace >> "dists/$distribution/$section/binary-$arch/Packages"
-	# read contents and append to Contents-$arch then sort by filename | unique
+	[ -n "$(grep "${filename}" "${packages_filename}")" ] \
+		&& echo "Package already added; skipping." && exit 0
 
-	mv workspace/* "pool/$section/${package_name::1}/$package_name"
-	rmdir workspace
+	rm -rf "${workspace_directory}" && mkdir -p "${workspace_directory}"
+	cp "${package}" "${workspace_directory}"
+	$(cd workspace; dpkg-scanpackages "${pool_directory}" >> "../${packages_filename}")
+	gzip -c9 "${packages_filename}" > "${packages_filename}.gz"
+	bzip2 -c9 "${packages_filename}" > "${packages_filename}.bz2"
+
+	# TODO: read contents of deb file and append to Contents-$arch then sort by filename | unique
+
+	mv "${workspace_directory}"/* "${pool_directory}"
+	$(cd workspace; rmdir "${pool_directory}")
 else
-	[ ! -d "dists/$distribution/$section/source" ] \
+	source_directory="${target_directory}/source"
+	[ ! -d "${source_directory}" ] \
 		&& echo "Source architecture doesn't exist in the repository." && exit 1
 
 	# dpkg-scansources
 fi
 
-echo "Added Debian package '${package_name} to '$section' pool."
+echo "Added Debian '${package_name}' package to '${section}' pool."
 exit 0
