@@ -80,6 +80,7 @@ function generate_package_indexes() {
 }
 function index_package() {
 	local package_path="$1"
+	local package_extension="${package_path##*.}"
 
 	if [[ "${package_path}" == *"/*" ]]; then index_package_directory "$@"
 	elif [ -d "${package_path}" ]; then index_package_directory "$@"
@@ -128,17 +129,19 @@ function index_binary_package() {
 	[ -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
 
 	local package_filename="$(basename "${package_path}")"
-	local available_cpus="$(cd "dist/${archive}/${section}/"; ls -d binary-* | \
+	local available_cpus="$(cd "dists/${archive}/${section}"; ls -d binary-* 2> /dev/null | \
 		sed 's/binary-\(.*\)/\1/' | tr '\n' ' ' )"
 
 	eval "$(extract_package_name_and_version "${package_path}")"
 
 	if [ "${package_cpu}" == "all" ]; then
-		for c in ${available_cpus}; do index_binary_package_architecture "$@" "${c}"; done
+		for c in ${available_cpus};
+			do index_binary_package_architecture "$@" "${package_name}" "${package_cpu}";
+		done
 	elif [[ ! " ${available_cpus} " == *" ${package_cpu} "* ]]; then
 		echo "The package's target architecture is not supported; skipping" >&2 && return 0 # not an error
 	else
-		index_binary_package_architecture "$@" "${package_cpu}"
+		index_binary_package_architecture "$@" "${package_name}" "${package_cpu}"
 	fi
 
 	return 0
@@ -161,7 +164,8 @@ function index_binary_package_architecture() {
 	local package_path="$1"
 	local archive="$2"
 	local section="$3"
-	local cpu="$4"
+	local package_name="$4"
+	local package_cpu="$5"
 
 	local target_path="dists/${archive}/${section}"
 	local content_filename="${target_path}/Contents-${arch}"
@@ -171,9 +175,8 @@ function index_binary_package_architecture() {
 
 	local workspace_path=""
 
-	[ -n "$(grep "${filename}" "${packages_filename}")" ] \
+	[ -f "${filename}" ] && [ -n "$(grep "${filename}" "${packages_filename}")" ] \
 	 	&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && exit 0
-
 
 	# TODO: isolate package from other files by copying to workspace
 	# dpkg-scanpackages
@@ -193,7 +196,7 @@ function gzip_and_bzip_file() {
 assert_working_directory
 assert_arguments "${raw_target}" "${raw_package}"
 expanded_targets=$(expand_target "${raw_target}" )
-generate_package_indexes "${package}" "${expanded_targets}"
+generate_package_indexes "${raw_package}" "${expanded_targets}"
 
 exit 0
 
