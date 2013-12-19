@@ -5,7 +5,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [[ "$#" > 0 ]]; do
   case "$1" in
-    -t|--target|--target=) target="$2"; shift ;;
+    -t|--target|--target=) target="$2"; shift ;; # TODO: allow multiple targets
     -p|--package|--package=) package="$2"; shift ;;
 	*) shift ;;
   esac
@@ -22,14 +22,45 @@ function gzip_and_bzip_file() {
 }
 
 all_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
-all_distributions="$(cd dists; ls -d *) | tr '\n' ' '"
-all_sections="$(cd pool; ls -d *) | tr '\n' ' '"
+all_archives="$(cd dists; ls -d * | tr '\n' ' ')"
+all_sections="$(cd pool; ls -d * | tr '\n' ' ' )"
+
+parsed_targets=""
+
+# TODO: avoid * expansion but allow looping (use IFS?)
+for t in "${target}"; do
+	if [ "${t}" == "*/*" ] || [ "${t}" == "*" ]; then
+		parsed_targets="${all_targets}"
+	elif [[ "${t}" == "*/"* ]]; then
+		section="${t:2}"
+		[[ ! " ${all_sections} " == *" ${section} "* ]] || [ -z "${section}" ] \
+			&& echo "The specified section '${section}' does not exist." && exit 1
+		for archive in ${all_archives}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
+	elif [[ "${t}" == *"/*" ]]; then
+		archive="${t:0:-2}"
+		[[ ! " ${all_archives} " == *" ${archive} "* ]] || [ -z "${archive}" ] \
+			&& echo "The specified archive '${archive}' does not exist." && exit 1
+		for section in ${all_sections}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
+	fi
+done
+
+[ -z "${parsed_targets}" ] && echo "None of the targets specified exit." && exit 1
+for p in ${parsed_targets}; do
+	[ ! -d "dists/${p}" ] && echo "The specified target ${p} does not exist." && exit 1
+	archive="${p%/*}"
+	section="${p#*/}"
+
+
+
+done
+
+exit 0
 
 # TODO: wildcards
 #[[ "$t" == "*/"* ]] && continue; # begins with */, grab the right side and find within all_sections
 #[[ "$t" == *"/*" ]] && continue; # ends with /*, grab the left side and find within all_sections
 [[ ! "${all_targets}" == *"${target}"* ]] && "The target '${t}' does not exist." && exit 1
-distribution="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\1/')"
+archive="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\1/')"
 section="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\2/')"
 
 [ -z "$(ls "${package}" 2> /dev/null)" ] && echo "The package to add '${package}' could not be found." && exit 1
@@ -38,7 +69,7 @@ package_name=$(echo "${filename}" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|dsc
 package_extension=${filename##*.}
 [ -z "${package_name}" ] && echo "The file specified package '${package}' doesn't appear to be a debian package." && exit 1
 
-target_directory="dists/${distribution}/${section}"
+target_directory="dists/${archive}/${section}"
 pool_directory="pool/${section}/${package_name::1}/${package_name}"
 workspace_directory="workspace/${pool_directory}"
 mkdir -p "${pool_directory}" "${workspace_directory}"
