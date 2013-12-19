@@ -14,7 +14,7 @@ $script_name init \\
   --sections "public private" \\
   --cpus "amd64 i386 source"
 
-script_name add \\
+$script_name add \\
   --target "*/public"
   --package "/path/to/package/*"
 
