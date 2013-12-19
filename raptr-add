@@ -111,7 +111,7 @@ function index_source_package() {
 	local archive="$2"
 	local section="$3"
 
-	[ -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
+	[ ! -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
 	eval "$(extract_package_name_and_version "${package_path}")"
 
 	return 0
@@ -121,15 +121,19 @@ function index_binary_package() {
 	local archive="$2"
 	local section="$3"
 
-	[ -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
+	[ ! -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
 	eval "$(extract_package_name_and_version "${package_path}")"
 
 	local available_cpus="$(cd "dists/${archive}/${section}"; ls -d binary-* 2> /dev/null | \
 		sed 's/binary-\(.*\)/\1/' | tr '\n' ' ' )"
 
+	echo "Package name: ${package_name}"
+	echo "Package version: ${package_version}"
+	echo "Package CPU architecture: ${package_cpu}"
+
 	if [ "${package_cpu}" == "all" ]; then
-		for c in ${available_cpus};
-			do index_binary_package_architecture "$@" "${package_name}" "${package_cpu}";
+		for each_cpu in ${available_cpus};
+			do index_binary_package_architecture "$@" "${package_name}" "${each_cpu}";
 		done
 	elif [[ ! " ${available_cpus} " == *" ${package_cpu} "* ]]; then
 		echo "The package's target architecture is not supported; skipping" >&2 && return 0 # not an error
@@ -146,10 +150,9 @@ function extract_package_name_and_version() {
 	local filename_without_extension="${package_filename%.*}"
 	local package_meta=( $(echo "${filename_without_extension}" | tr "_" " ") )
 
-	if [ "${package_extension}" == "dsc" ]; then
+	[ "${package_extension}" == "dsc" ] && \
 		local source_filename="$(cat "${package_path}" | \
 			sed -n 's/ [a-z0-9]\{32\} [0-9]\+ \(.*\)/\1/p' | tr "\n" " " )"
-	fi
 
 	cat <<-EOF
 		local package_filename="${package_filename}"
@@ -162,6 +165,7 @@ function extract_package_name_and_version() {
 }
 function index_binary_package_architecture() {
 	local package_path="$1"
+	local package_filename="$(basename "${package_path}")"
 	local archive="$2"
 	local section="$3"
 	local package_name="$4"
@@ -170,19 +174,26 @@ function index_binary_package_architecture() {
 	local target_path="dists/${archive}/${section}"
 	local content_filename="${target_path}/Contents-${arch}"
 
-	local cpu_path="${target_path}/binary-${cpu}"
-	local packages_index_filename="${cpu_path}/Packages"
+	local cpu_path="${target_path}/binary-${package_cpu}"
+	local packages_index_path="$(readlink -m "${cpu_path}/Packages")"
 
-	local workspace_path=""
+	local pool_directory="pool/${section}/${package_name::1}/${package_name}"
+	local workspace_root="/tmp/raptr/workspaces/$$"
+	local workspace_path="${workspace_root}/${pool_directory}"
 
-	[ -f "${filename}" ] && [ -n "$(grep "${filename}" "${packages_filename}")" ] \
-	 	&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && exit 0
+	echo "Adding '${package_name}' to '${cpu_path}'."
 
-	# TODO: isolate package from other files by copying to workspace
-	# dpkg-scanpackages
-	# figure out package contents (ar)
-	# move package to pool
-	# cleanup workspace
+	[ -f "${packages_index_path}" ] && [ -n "$(grep "${package_filename}" "${packages_index_path}")" ] \
+		&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && exit 0
+
+	mkdir -p "${pool_directory}" "${workspace_path}"
+	ln -s "$(readlink -m "${package_path}")" "${workspace_path}"
+	$( cd "${workspace_root}"; dpkg-scanpackages "${pool_directory}" >> "${packages_index_path}" )
+	gzip_and_bzip_file "${packages_index_path}"
+	rm -rf "${workspace_root}"
+
+	[ "$(readlink -m "${package_path}")" != "$(readlink -m "${pool_directory}/${package_filename}")" ] && \
+		cp "${package_path}" "${pool_directory}"
 
 	return 0
 }
