@@ -3,18 +3,70 @@ set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-while [[ "$#" > 0 ]]; do
-  case "$1" in
-    -t|--target|--target=) target="$2"; shift ;; # TODO: allow multiple targets
-    -p|--package|--package=) package="$2"; shift ;;
-	*) shift ;;
-  esac
-done
+function parse_arguments() {
+	while [[ "$#" > 0 ]]; do
+	  case "$1" in
+	    -t|--target|--target=) target="$2"; shift ;; # TODO: allow multiple targets
+	    -p|--package|--package=) package="$2"; shift ;;
+		*) shift ;;
+	  esac
+	done
+}
+function assert_working_directory() {
+	[ ! -d ./dists ] && echo "The command must be executed inside of an active repository." && return 1
+	[ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && return 1
+}
+function assert_arguments() {
+	[ -z "${target}" ] && echo "Missing required target to which package should be added." && return 1
+	[ -z "${package}" ] && echo "Missing required package to add." && return 1
+}
+function expand_target() {
+	local target_argument="$1"
+	local available_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | \
+		sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
+	local available_archives="$(cd dists; ls -d * | tr '\n' ' ')"
+	local available_sections="$(cd pool; ls -d * | tr '\n' ' ' )"
+	local discovered=""
 
-[ -z "${target}" ] && echo "Missing required target to which package should be added." && exit 1
-[ -z "${package}" ] && echo "Missing required package to add." && exit 1
-[ ! -d ./dists ] && echo "The command must be executed inside of an active repository." && exit 1
-[ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && exit 1
+	# TODO: avoid * expansion but allow looping (use IFS?)
+	for t in "${target_argument}"; do
+		if [ "${t}" == "*/*" ] || [ "${t}" == "*" ]; then local discovered="${available_targets}"
+		elif [[ " ${available_targets} " == *" ${t} "* ]]; then local discovered="${discovered} ${t}"
+		elif [[ "${t}" == "*/"* ]]; then
+			local expanded=$(expand_target_prefix "${t:2}" "${available_sections}" "${available_archives}" )
+			local discovered="${discovered} ${expanded}"
+		elif [[ "${t}" == *"/*" ]]; then
+			local expanded=$(expand_target_suffix "${t:0:-2}" "${available_sections}" "${available_archives}" )
+			local discovered="${discovered} ${expanded}"
+		fi
+	done
+
+	echo "${discovered}" && return 0
+}
+function expand_target_prefix() {
+	local section="$1"
+	local available_sections="$2"
+	local available_archives="$3"
+	local expanded=""
+
+	[[ ! " ${available_sections} " == *" ${section} "* ]] || [ -z "${section}" ] \
+		&& echo "The specified section '${section}' does not exist." && exit 1
+	for archive in ${available_archives}; do expanded="${expanded} ${archive}/${section}"; done
+
+	echo "${expanded}" && return 0
+}
+function expand_target_suffix() {
+	local archive="$1"
+	local available_sections="$2"
+	local available_archives="$3"
+	local expanded=""
+
+	[[ ! " ${available_archives} " == *" ${archive} "* ]] || [ -z "${archive}" ] \
+		&& echo "The specified archive '${archive}' does not exist." && exit 1
+	for section in ${available_sections}; do expanded="${expanded} ${archive}/${section}"; done
+
+	echo "${expanded}" && return 0
+}
 
 function gzip_and_bzip_file() {
 	local uncompressed_file = "$1"
@@ -43,33 +95,13 @@ function discover_binary_package() {
 	return 0
 }
 
-available_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
-available_archives="$(cd dists; ls -d * | tr '\n' ' ')"
-available_sections="$(cd pool; ls -d * | tr '\n' ' ' )"
+assert_working_directory
+parse_arguments
+assert_arguments
+expanded_targets=$(expand_target "${target}" )
 
-parsed_targets=""
-
-# TODO: avoid * expansion but allow looping (use IFS?)
-for t in "${target}"; do
-	if [ "${t}" == "*/*" ] || [ "${t}" == "*" ]; then
-		parsed_targets="${available_targets}"
-	elif [[ " ${available_targets} " == *" ${t} "* ]]; then
-		parsed_targets="${parsed_targets} ${t}"
-	elif [[ "${t}" == "*/"* ]]; then
-		section="${t:2}"
-		[[ ! " ${available_sections} " == *" ${section} "* ]] || [ -z "${section}" ] \
-			&& echo "The specified section '${section}' does not exist." && exit 1
-		for archive in ${available_archives}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
-	elif [[ "${t}" == *"/*" ]]; then
-		archive="${t:0:-2}"
-		[[ ! " ${available_archives} " == *" ${archive} "* ]] || [ -z "${archive}" ] \
-			&& echo "The specified archive '${archive}' does not exist." && exit 1
-		for section in ${available_sections}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
-	fi
-done
-
-[ -z "${parsed_targets}" ] && echo "None of the targets specified exit." && exit 1
-for p in ${parsed_targets}; do
+[ -z "${expanded_targets}" ] && echo "None of the targets specified exit." && exit 1
+for p in ${expanded_targets}; do
 	[ ! -d "dists/${p}" ] && echo "The specified target ${p} does not exist." && exit 1
 	archive="${p%/*}"
 	section="${p#*/}"
