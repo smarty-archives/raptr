@@ -30,7 +30,7 @@ function expand_target() {
 	for t in "${target_input}"; do
 		if [ "${t}" == "*/*" ] || [ "${t}" == "*" ]; then echo -n "${available_targets} "
 		elif [[ " ${available_targets} " == *" ${t} "* ]]; then echo -n "${t} "
-		elif [[ "${t}" == "*/"* ]]; then echo -n "$(expand_target_prefix "${t:2}"])"
+		elif [[ "${t}" == "*/"* ]]; then echo -n "$(expand_target_prefix "${t:2}")"
 		elif [[ "${t}" == *"/*" ]]; then echo -n "$(expand_target_suffix "${t:0:-2}")"
 		fi
 	done
