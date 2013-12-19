@@ -63,7 +63,7 @@ function expand_target_suffix() {
 	
 	return 0
 }
-function index_packages() {
+function generate_package_indexes() {
 	local package="$1"
 	local targets="$2"
 
@@ -81,19 +81,10 @@ function index_packages() {
 function index_package() {
 	local package_path="$1"
 
-	# TODO: determine the package to add; it could be a:
-	# 1. native source package
-	# 2. non-native source package
-	# 3. native, architecture-specific, binary package, e.g. pkg_1.0.0-1ubuntu1~asdf_amd64.deb
-	# 4. non-native architecture-specific, binary package, e.g. pkg_1.0.0~asdf_i386.deb
-	# 5. native, architecture-independent, binary package, e.g. pkg_1.0.0~asdf_all.deb
-	# 6. non-native, architecture-independent, binary package, e.g. pkg_1.0.0-1ubuntu1~asdf_all.deb
-
-	# TODO: what characters are allowed in the version field of the filename? plus characters?
 	if [[ "${package_path}" == *"/*" ]]; then index_package_directory "$@"
 	elif [ -d "${package_path}" ]; then index_package_directory "$@"
-	elif [ "${package_extension}" == "deb" ]; then index_binary_package "$@"
-	elif [ "${package_extension}" == "dsc" ]; then index_source_package "$@"
+	elif [ "${package_extension}" == "deb" ]; then index_binary_package "$@" "$(basename "${package_path}")"
+	elif [ "${package_extension}" == "dsc" ]; then index_source_package "$@" "$(basename "${package_path}")"
 	else echo "Could not determine package contents; make sure it's a 'deb' or 'dsc' file." >&2 && return 1
 	fi
 
@@ -101,6 +92,10 @@ function index_package() {
 }
 function index_package_directory() {
 	local package_path="$1"
+	local filenames="$(ls "${package_path}")"
+
+	[ -z "${filenames}" ] && \
+		echo "The directory '${package_path}' does not exist or does not contain any files." >&2 && return 1
 
 	for filename in ${package_path}; do
 		local extension="${filename##*.}"
@@ -112,7 +107,11 @@ function index_package_directory() {
 }
 function index_source_package() {
 	local package_path="$1"
-	local package_filename="$(basename "${package_path}")"
+	local archive="$2"
+	local section="$3"
+	local package_filename="$4"
+
+	[ -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
 
 	# TODO: determine source files
 	# .orig.tar.gz, .orig.tar.bz2, .orig.tar.xz, etc.
@@ -124,21 +123,43 @@ function index_binary_package() {
 	local package_path="$1"
 	local archive="$2"
 	local section="$3"
+	local package_filename="$4"
+
+	[ -f "${package_path}" ] && echo "The binary package '${package_path}' does not exist." >&2 && return 1
 
 	local package_filename="$(basename "${package_path}")"
 	local available_cpus="$(cd "dist/${archive}/${section}/"; ls -d binary-* | \
 		sed 's/binary-\(.*\)/\1/' | tr '\n' ' ' )"
 
+	local package_name="" # TODO
+	local package_version="" # TODO
 	local cpu="" # TODO
 
 	if [ "${cpu}" == "all" ]; then
 		for c in ${available_cpus}; do index_binary_package_architecture "$@" "${c}"; done
 	elif [[ ! " ${available_cpus} " == *" ${cpu} "* ]]; then
 		echo "The package's target architecture is not supported; skipping" >&2 && return 0 # not an error
-	else index_binary_package_architecture "$@" "${cpu}"
+	else
+		index_binary_package_architecture "$@" "${cpu}"
 	fi
 
 	return 0
+}
+function extract_package_name_and_version() {
+	local package_path="$1"
+	local package_filename="$(basename "${package_path}")"
+	local package_extension="${package_filename##*.}"
+	local package_meta=( $(echo "${package_filename%.*}" | tr "_" " ") )
+
+	# [ -f "${package_path}" ] && echo "The package specified '${package_path}' does not exist." >&2 && return 1
+
+	cat <<-EOF
+		local package_filename="${package_filename}"
+		local package_name="${package_meta[0]}"
+		local package_extension="${package_extension}"
+		local package_version="${package_meta[1]}"
+		local package_cpu="${package_meta[2]}"
+	EOF
 }
 function index_binary_package_architecture() {
 	local package_path="$1"
@@ -146,14 +167,17 @@ function index_binary_package_architecture() {
 	local section="$3"
 	local cpu="$4"
 
-	target_directory="dists/${archive}/${section}"
-	content_filename="${target_directory}/Contents-${arch}"
+	local target_path="dists/${archive}/${section}"
+	local content_filename="${target_path}/Contents-${arch}"
 
-	cpu_directory="${target_directory}/binary-${cpu}"
-	packages_index_filename="${cpu_directory}/Packages"
+	local cpu_path="${target_path}/binary-${cpu}"
+	local packages_index_filename="${cpu_path}/Packages"
+
+	local workspace_path=""
 
 	[ -n "$(grep "${filename}" "${packages_filename}")" ] \
-	 	&& echo "Binary package already added to target directory '${cpu_directory}'; skipping." >&2 && exit 0
+	 	&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && exit 0
+
 
 	# TODO: isolate package from other files by copying to workspace
 	# dpkg-scanpackages
@@ -173,7 +197,8 @@ function gzip_and_bzip_file() {
 assert_working_directory
 assert_arguments "${raw_target}" "${raw_package}"
 expanded_targets=$(expand_target "${raw_target}" )
-index_packages "${package}" "${expanded_targets}"
+generate_package_indexes "${package}" "${expanded_targets}"
+
 exit 0
 
 ##################################################################################################
