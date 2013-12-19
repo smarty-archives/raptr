@@ -50,18 +50,18 @@ for p in ${parsed_targets}; do
 	archive="${p%/*}"
 	section="${p#*/}"
 
+	# TODO: determine the package to add; it could be a:
+	# 1. native source package
+	# 2. non-native source package
+	# 3. native, architecture-specific, binary package, e.g. pkg_1.0.0-1ubuntu1~asdf_amd64.deb
+	# 4. non-native architecture-specific, binary package, e.g. pkg_1.0.0~asdf_i386.deb
+	# 5. native, architecture-independent, binary package, e.g. pkg_1.0.0~asdf_all.deb
+	# 6. non-native, architecture-independent, binary package, e.g. pkg_1.0.0-1ubuntu1~asdf_all.deb
 
-
+	# TODO: what characters are allowed in the file version? plus characters?
 done
 
 exit 0
-
-# TODO: wildcards
-#[[ "$t" == "*/"* ]] && continue; # begins with */, grab the right side and find within all_sections
-#[[ "$t" == *"/*" ]] && continue; # ends with /*, grab the left side and find within all_sections
-[[ ! "${all_targets}" == *"${target}"* ]] && "The target '${t}' does not exist." && exit 1
-archive="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\1/')"
-section="$(echo "${target}" | sed -r 's/(.*)\/(.*)/\2/')"
 
 [ -z "$(ls "${package}" 2> /dev/null)" ] && echo "The package to add '${package}' could not be found." && exit 1
 filename="$(basename "${package}")"
