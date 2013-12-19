@@ -17,30 +17,54 @@ done
 [ ! -d ./pool ] && echo "The command must be executed inside of an active repository." && exit 1
 
 function gzip_and_bzip_file() {
-	gzip -c9 "$1" > "$1.gz"
-	bzip2 -c9 "$1" > "$1.bz2"
+	local uncompressed_file = "$1"
+	gzip -c9 "${uncompressed_file}" > "${uncompressed_file}.gz"
+	bzip2 -c9 "${uncompressed_file}" > "${uncompressed_file}.bz2"
+}
+function discover_package() {
+	local package_path="$1"
+	package_extension="${package_path##*.}"
+
+	if [[ "${package_path}" == *"/*" ]]; then discover_package_directory "${package_path}"
+	elif [ "${package_extension}" == "deb" ]; then discover_binary_package "${package_path}"
+	elif [ "${package_extension}" == "dsc" ]; then discover_source_package "${package_path}"
+	else echo "Could not determine package contents." && return 1
+	fi
+}
+function discover_package_directory() {
+	return 0
+}
+function discover_source_package() {
+	local package_filename="$(basename "${package_path}")"
+	return 0
+}
+function discover_binary_package() {
+	local package_filename="$(basename "${package_path}")"
+	return 0
 }
 
-all_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
-all_archives="$(cd dists; ls -d * | tr '\n' ' ')"
-all_sections="$(cd pool; ls -d * | tr '\n' ' ' )"
+available_targets="$(cd dists; find . -mindepth 2 -maxdepth 2 -type d | sed -r 's/\.\/(.*?)/\1 /g' | tr '\n' ' ')"
+available_archives="$(cd dists; ls -d * | tr '\n' ' ')"
+available_sections="$(cd pool; ls -d * | tr '\n' ' ' )"
 
 parsed_targets=""
 
 # TODO: avoid * expansion but allow looping (use IFS?)
 for t in "${target}"; do
 	if [ "${t}" == "*/*" ] || [ "${t}" == "*" ]; then
-		parsed_targets="${all_targets}"
+		parsed_targets="${available_targets}"
+	elif [[ " ${available_targets} " == *" ${t} "* ]]; then
+		parsed_targets="${parsed_targets} ${t}"
 	elif [[ "${t}" == "*/"* ]]; then
 		section="${t:2}"
-		[[ ! " ${all_sections} " == *" ${section} "* ]] || [ -z "${section}" ] \
+		[[ ! " ${available_sections} " == *" ${section} "* ]] || [ -z "${section}" ] \
 			&& echo "The specified section '${section}' does not exist." && exit 1
-		for archive in ${all_archives}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
+		for archive in ${available_archives}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
 	elif [[ "${t}" == *"/*" ]]; then
 		archive="${t:0:-2}"
-		[[ ! " ${all_archives} " == *" ${archive} "* ]] || [ -z "${archive}" ] \
+		[[ ! " ${available_archives} " == *" ${archive} "* ]] || [ -z "${archive}" ] \
 			&& echo "The specified archive '${archive}' does not exist." && exit 1
-		for section in ${all_sections}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
+		for section in ${available_sections}; do parsed_targets="${parsed_targets} ${archive}/${section}"; done
 	fi
 done
 
@@ -66,7 +90,7 @@ exit 0
 [ -z "$(ls "${package}" 2> /dev/null)" ] && echo "The package to add '${package}' could not be found." && exit 1
 filename="$(basename "${package}")"
 package_name=$(echo "${filename}" | sed -n 's/\([A-Za-z0-9.-]\+\)_.*\.\(deb\|dsc\)/\1/p')
-package_extension=${filename##*.}
+package_extension="${filename##*.}"
 [ -z "${package_name}" ] && echo "The file specified package '${package}' doesn't appear to be a debian package." && exit 1
 
 target_directory="dists/${archive}/${section}"
