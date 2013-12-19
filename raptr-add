@@ -30,12 +30,8 @@ function expand_target() {
 	for t in "${target_input}"; do
 		if [ "${t}" == "*/*" ] || [ "${t}" == "*" ]; then echo -n "${available_targets} "
 		elif [[ " ${available_targets} " == *" ${t} "* ]]; then echo -n "${t} "
-		elif [[ "${t}" == "*/"* ]]; then
-			local expanded=$(expand_target_prefix "${t:2}"])
-			echo -n "${expanded}"
-		elif [[ "${t}" == *"/*" ]]; then
-			local expanded=$(expand_target_suffix "${t:0:-2}")
-			echo -n "${expanded}"
+		elif [[ "${t}" == "*/"* ]]; then echo -n "$(expand_target_prefix "${t:2}"])"
+		elif [[ "${t}" == *"/*" ]]; then echo -n "$(expand_target_suffix "${t:0:-2}")"
 		fi
 	done
 	
@@ -84,8 +80,6 @@ function index_packages() {
 }
 function index_package() {
 	local package_path="$1"
-	local archive="$2"
-	local section="$3"
 
 	# TODO: determine the package to add; it could be a:
 	# 1. native source package
@@ -96,10 +90,10 @@ function index_package() {
 	# 6. non-native, architecture-independent, binary package, e.g. pkg_1.0.0-1ubuntu1~asdf_all.deb
 
 	# TODO: what characters are allowed in the version field of the filename? plus characters?
-	if [[ "${package_path}" == *"/*" ]]; then index_package_directory "${package_path}"
-	elif [ -d "${package_path}" ]; then index_package_directory "${package_path}"
-	elif [ "${package_extension}" == "deb" ]; then index_binary_package "${package_path}"
-	elif [ "${package_extension}" == "dsc" ]; then index_source_package "${package_path}"
+	if [[ "${package_path}" == *"/*" ]]; then index_package_directory "$@"
+	elif [ -d "${package_path}" ]; then index_package_directory "$@"
+	elif [ "${package_extension}" == "deb" ]; then index_binary_package "$@"
+	elif [ "${package_extension}" == "dsc" ]; then index_source_package "$@"
 	else echo "Could not determine package contents; make sure it's a 'deb' or 'dsc' file." >&2 && return 1
 	fi
 
@@ -112,11 +106,54 @@ function index_package_directory() {
 function index_source_package() {
 	local package_path="$1"
 	local package_filename="$(basename "${package_path}")"
+
+	# TODO: determine source files
+	# .orig.tar.gz, .orig.tar.bz2, .orig.tar.xz, etc.
+	# [non-native packages] .debian.tar.gz, etc.
+
 	return 0
 }
 function index_binary_package() {
 	local package_path="$1"
+	local archive="$2"
+	local section="$3"
+
 	local package_filename="$(basename "${package_path}")"
+	local available_cpus="$(cd "dist/${archive}/${section}/"; ls -d binary-* | \
+		sed 's/binary-\(.*\)/\1/' | tr '\n' ' ' )"
+
+	local cpu="" # TODO
+
+	if [ "${cpu}" == "all" ]; then
+		for c in ${available_cpus}; do index_binary_package_architecture "$@" "${c}"; done
+	elif [[ ! " ${available_cpus} " == *" ${cpu} "* ]]; then
+		echo "The package's target architecture is not supported; skipping" >&2 && return 0 # not an error
+	else index_binary_package_architecture "$@" "${cpu}"
+	fi
+
+	return 0
+}
+function index_binary_package_architecture() {
+	local package_path="$1"
+	local archive="$2"
+	local section="$3"
+	local cpu="$4"
+
+	target_directory="dists/${archive}/${section}"
+	content_filename="${target_directory}/Contents-${arch}"
+
+	cpu_directory="${target_directory}/binary-${cpu}"
+	packages_index_filename="${cpu_directory}/Packages"
+
+	[ -n "$(grep "${filename}" "${packages_filename}")" ] \
+	 	&& echo "Binary package already added to target directory '${cpu_directory}'; skipping." >&2 && exit 0
+
+	# TODO: isolate package from other files by copying to workspace
+	# dpkg-scanpackages
+	# figure out package contents (ar)
+	# move package to pool
+	# cleanup workspace
+
 	return 0
 }
 function gzip_and_bzip_file() {
