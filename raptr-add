@@ -184,7 +184,7 @@ function index_binary_package_architecture() {
 	echo "Adding '${package_name}' to '${cpu_path}'."
 
 	[ -f "${packages_index_path}" ] && [ -n "$(grep "${package_filename}" "${packages_index_path}")" ] \
-		&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && exit 0
+		&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && return 0
 
 	mkdir -p "${pool_directory}" "${workspace_path}"
 	ln -s "$(readlink -m "${package_path}")" "${workspace_path}"
