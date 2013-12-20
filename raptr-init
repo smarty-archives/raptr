@@ -20,6 +20,7 @@ origin="$RAPTR_ORIGIN"; [ -z "${origin}" ] && origin="raptr"
 description="$RAPTR_DESCRIPTION"; [ -z "${description}" ] && description="raptr personal repository"
 
 echo "Initializing apt repository at '$(pwd)'."
+mkdir -p conf
 
 for archive in $archives; do
 	echo "Generating release-specific configuration for '${archive}'."
@@ -30,10 +31,8 @@ for archive in $archives; do
 		APT::FTPArchive::Release::Architectures "$cpus";
 		APT::FTPArchive::Release::Description "$description";
 	EOF
-done
 
-for archive in $archives; do
-	echo "Creating sections '${sections}' for archive '${archive}'."
+	echo "Creating sections '${sections}'."
 	for section in $sections; do
 		for cpu in $cpus; do
 			parsed_cpu="binary-${cpu}"
