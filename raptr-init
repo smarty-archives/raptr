@@ -40,8 +40,13 @@ for archive in $archives; do
 
 			cpu_directory="dists/${archive}/${section}/${parsed_cpu}"
 			mkdir -p "${cpu_directory}"
-			[ "${cpu}" == "source" ] && touch "${cpu_directory}/Sources"
-			[ "${cpu}" != "source" ] && touch "${cpu_directory}/Packages"
+
+			[ "${cpu}" == "source" ] && index_file="${cpu_directory}/Sources"
+			[ "${cpu}" != "source" ] && index_file="${cpu_directory}/Packages"
+
+			touch "${index_file}"
+			gzip -c9 "${index_file}" > "${index_file}.gz"
+			bzip2 -c9 "${index_file}" > "${index_file}.bz2"
 
 			cat > "${cpu_directory}/Release" <<-EOF
 				Archive: ${archive}
