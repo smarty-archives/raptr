@@ -26,6 +26,7 @@ for archive in $archives; do
 	echo "Generating release-specific configuration for '${archive}'."
 	cat > "conf/apt-$archive-release.conf" <<-EOF
 		APT::FTPArchive::Release::Archive "$archive";
+		APT::FTPArchive::Release::Suite "$archive";
 		APT::FTPArchive::Release::Components "$sections";
 		APT::FTPArchive::Release::Origin "$origin";
 		APT::FTPArchive::Release::Architectures "$cpus";
