@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -172,6 +172,10 @@ function extract_package_name_and_version() {
 	[ "${package_extension}" == "dsc" ] && \
 		local source_filenames="$(cat "${package_path}" | \
 			sed -n 's/ [a-z0-9]\{32\} [0-9]\+ \(.*\)/\1/p' | tr "\n" " " )"
+
+	[ "${package_meta[2]}" == "x86" ] && [ "${package_meta[3]}" == "64" ] \
+		&& local package_meta[2]="amd64" && local package_meta[3]=""
+	[ "${package_meta[2]}" == "i686" ] && local package_meta[2]="i386"
 
 	cat <<-EOF
 		local package_filename="${package_filename}"
