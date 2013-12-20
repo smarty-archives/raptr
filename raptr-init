@@ -37,8 +37,13 @@ for archive in $archives; do
 		for cpu in $cpus; do
 			parsed_cpu="binary-${cpu}"
 			[ "${cpu}" == "source" ] && parsed_cpu="${cpu}"
-			mkdir -p "dists/${archive}/${section}/${parsed_cpu}"
-			cat > "dists/${archive}/${section}/${parsed_cpu}/Release" <<-EOF
+
+			cpu_directory="dists/${archive}/${section}/${parsed_cpu}"
+			mkdir -p "${cpu_directory}"
+			[ "${cpu}" == "source" ] && touch "${cpu_directory}/Sources"
+			[ "${cpu}" != "source" ] && touch "${cpu_directory}/Packages"
+
+			cat > "${cpu_directory}/Release" <<-EOF
 				Archive: ${archive}
 				Component: ${section}
 				Origin: ${origin}
