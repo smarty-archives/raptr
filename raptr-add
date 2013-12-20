@@ -119,10 +119,11 @@ function index_source_package() {
 	eval "$(extract_package_name_and_version "${package_path}")"
 
 	local sources_path="dists/${archive}/${section}/source"
-	local sources_index_path="$(readlink -m "${sources_path}/Source")"
+	local sources_index_path="$(readlink -m "${sources_path}/Sources")"
 	local pool_directory="pool/${section}/${package_name::1}/${package_name}"
 	local workspace_root="/tmp/raptr/workspaces/$$"
 	local workspace_path="${workspace_root}/${pool_directory}"
+	local package_directory="$(dirname "${package_path}" )"
 
 	echo "Adding '${package_name}' to '${sources_path}'."
 	[ -f "${sources_index_path}" ] && [ -n "$(grep "${package_filename}" "${sources_index_path}")" ] \
@@ -130,7 +131,7 @@ function index_source_package() {
 
 	mkdir -p "${sources_path}" "${workspace_path}" "${pool_directory}"
 	ln -s "${package_path}" "${workspace_path}"
-	for f in ${source_filenames}; do ln -s "${f}" "${workspace_path}"; done
+	for f in ${source_filenames}; do ln -s "${package_directory}/${f}" "${workspace_path}"; done
 	$( cd "${workspace_root}"; dpkg-scansources "${pool_directory}" >> "${sources_index_path}" )
 	gzip_and_bzip_file "${sources_index_path}"
 	cp "${workspace_path}"/* "${pool_directory}"
@@ -169,7 +170,7 @@ function extract_package_name_and_version() {
 	local package_meta=( $(echo "${filename_without_extension}" | tr "_" " ") )
 
 	[ "${package_extension}" == "dsc" ] && \
-		local source_filename="$(cat "${package_path}" | \
+		local source_filenames="$(cat "${package_path}" | \
 			sed -n 's/ [a-z0-9]\{32\} [0-9]\+ \(.*\)/\1/p' | tr "\n" " " )"
 
 	cat <<-EOF
