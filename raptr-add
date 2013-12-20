@@ -70,6 +70,8 @@ function generate_package_indexes() {
 	[ -n "${targets}" ] && echo "Targets: ${targets}"
 	[ -z "${targets}" ] && echo "There are no targets." >&2 && return 1
 
+	[ -d "${package}" ] && local package="${package}/*"
+
 	for t in ${targets}; do
 		local archive="${t%/*}"
 		local section="${t#*/}"
