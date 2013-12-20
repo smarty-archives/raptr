@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 script_name="$(basename "$BASH_SOURCE")"
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -123,14 +123,14 @@ function index_source_package() {
 	local pool_directory="pool/${section}/${package_name::1}/${package_name}"
 	local workspace_root="/tmp/raptr/workspaces/$$"
 	local workspace_path="${workspace_root}/${pool_directory}"
-	local package_directory="$(dirname "${package_path}" )"
+	local package_directory="$(readlink -m "$(dirname "${package_path}")")"
 
 	echo "Adding '${package_name}' to '${sources_path}'."
 	[ -f "${sources_index_path}" ] && [ -n "$(grep "${package_filename}" "${sources_index_path}")" ] \
 		&& echo "Source package already added to target directory '${sources_path}'; skipping." >&2 && return 0
 
 	mkdir -p "${sources_path}" "${workspace_path}" "${pool_directory}"
-	ln -s "${package_path}" "${workspace_path}"
+	ln -s "$(readlink -m "${package_path}")" "${workspace_path}"
 	for f in ${source_filenames}; do ln -s "${package_directory}/${f}" "${workspace_path}"; done
 	$( cd "${workspace_root}"; dpkg-scansources "${pool_directory}" >> "${sources_index_path}" )
 	gzip_and_bzip_file "${sources_index_path}"
@@ -209,7 +209,7 @@ function index_binary_package_architecture() {
 		&& echo "Binary package already added to target directory '${cpu_path}'; skipping." >&2 && return 0
 
 	mkdir -p "${pool_directory}" "${workspace_path}"
-	ln -s "${package_path}" "${workspace_path}"
+	ln -s "$(readlink -m "${package_path}")" "${workspace_path}"
 	$( cd "${workspace_root}"; dpkg-scanpackages "${pool_directory}" >> "${packages_index_path}" )
 	gzip_and_bzip_file "${packages_index_path}"
 
