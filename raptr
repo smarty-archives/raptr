@@ -5,14 +5,22 @@ script_dir="$( cd "$( dirname $(readlink -f "${BASH_SOURCE[0]}" ))" && pwd )"
 
 function usage() {
 cat <<-EOF
-raptr is a simple APT Repository builder and updater.  It relies on dpkg-scanpackage|source and GPG to do the heavy lifting.
+raptr is a simple APT repository builder and updater.  It relies on dpkg-scanpackage|source and GPG to do the heavy lifting.
 
 Example usage:
+
+################################################################
+
+Creating a new APT repository:
 
 ${script_name} init \\
   --archives "production staging testing" \\
   --sections "public private" \\
   --cpus "amd64 i386 source"
+
+################################################################
+
+Adding various kinds of packages to an existing repository:
 
 ${script_name} add \\
   --target "*/public"
@@ -30,9 +38,15 @@ ${script_name} add \\
   --target "testing/private"
   --package my-package.deb
 
+################################################################
+
+Updating the repository indices such that it can be published:
+
 ${script_name} update \\
   --gpg="mykey@domain.com"
   --export-public-key
+
+################################################################
 
 EOF
 }

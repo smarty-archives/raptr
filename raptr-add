@@ -99,9 +99,8 @@ function index_package_directory() {
 		echo "The directory '${package_path}' does not exist or does not contain any files." >&2 && return 1
 
 	for filename in ${package_path}; do
-		local extension="${filename##*.}"
-		[ "${extension}" != "deb" ] && [ "${extension}" != "dsc" ] && continue
-		index_package "${filename}"
+		local extension=""
+		[ "${extension}" == "deb" ] || [ "${extension}" == "dsc" ] && index_package "${filename}"
 	done
 
 	return 0
@@ -145,10 +144,6 @@ function index_binary_package() {
 
 	local available_cpus="$(cd "dists/${archive}/${section}"; ls -d binary-* 2> /dev/null | \
 		sed 's/binary-\(.*\)/\1/' | tr '\n' ' ' )"
-
-	echo "Package name: ${package_name}"
-	echo "Package version: ${package_version}"
-	echo "Package CPU architecture: ${package_cpu}"
 
 	if [ "${package_cpu}" == "all" ]; then
 		for each_cpu in ${available_cpus};
@@ -209,9 +204,9 @@ function index_binary_package_architecture() {
 	$( cd "${workspace_root}"; dpkg-scanpackages "${pool_directory}" >> "${packages_index_path}" )
 	gzip_and_bzip_file "${packages_index_path}"
 
-	# TODO: generate dists/archive/section/Contents-architecture file
-	# grab all the files this installs and then sort | unique out to the same file
-	# gzip, bzip2 Contents-architecture file
+	# TODO: generate *optional* dists/(archive)/(section)/Contents-(cpu) file:
+	# https://wiki.debian.org/RepositoryFormat#A.22Contents.22_indices
+	# then gzip, bzip2 Contents-(cpu) file
 
 	rm -rf "${workspace_root}"
 	[ ! -f "${pool_directory}/${package_filename}" ] && cp "${package_path}" "${pool_directory}"
