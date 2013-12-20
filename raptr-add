@@ -93,14 +93,18 @@ function index_package() {
 }
 function index_package_directory() {
 	local package_path="$1"
-	local filenames="$(ls "${package_path}")"
+	local archive="$2"
+	local section="$3"
+	local filenames="$(ls ${package_path})"
 
 	[ -z "${filenames}" ] && \
 		echo "The directory '${package_path}' does not exist or does not contain any files." >&2 && return 1
 
 	for filename in ${package_path}; do
-		local extension=""
-		[ "${extension}" == "deb" ] || [ "${extension}" == "dsc" ] && index_package "${filename}"
+		[ ! -f "${filename}" ] && continue
+		local extension="${filename##*.}"
+		[ "${extension}" == "deb" ] || [ "${extension}" == "dsc" ] && \
+			index_package "${filename}" "${archive}" "${section}"
 	done
 
 	return 0
