@@ -1,7 +1,7 @@
 raptr
 =====
 
-A simple, shell-based APT Repository builder and updater. In other words, **R**epository builder and **APT** update**R**: RAPTR.
+A simple, shell-based APT Repository builder and updater. In other words, [R]epository builder and [APT] update[R]: R.A.P.T.R.
 
 ***Example usage:***
 
