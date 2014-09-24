@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 9.0)
 Vcs-Git: git://github.com/smartystreets/raptr.git
 Vcs-Browser: https://github.com/smartystreets/raptr
 
-Package: ratpr
+Package: raptr
 Architecture: amd64
 Depends: ${misc:Depends}
 Description: Debian APT repository manager.
