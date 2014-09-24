@@ -1,0 +1,14 @@
+Source: raptr
+Section: extra
+Priority: optional
+Maintainer: Oliver, Jonathan <git@jonathanoliver.com>
+Standards-Version: 3.9.5
+Build-Depends: debhelper (>= 9.0)
+Vcs-Git: git://github.com/smartystreets/raptr.git
+Vcs-Browser: https://github.com/smartystreets/raptr
+
+Package: ratpr
+Architecture: amd64
+Depends: ${misc:Depends}
+Description: Debian APT repository manager.
+ Utilizes to administrate remote APT repositories.
