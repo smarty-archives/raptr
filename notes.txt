@@ -71,6 +71,7 @@ raptr
 	# remember that a name can be shared by multiple packages
 	# each of which contain the same name, but different versions and CPU architecures
 	# during upload (add), if file isn't duplicate, give it a unique name...
+	# if a package is already a part of one category, can it be a part of another category?
 
 raptr init
 raptr backend add aws-us-west-1 s3://raptr-us-west-1/debian/
