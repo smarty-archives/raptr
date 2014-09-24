@@ -1,0 +1,168 @@
+# each command below updates master-index.json
+raptr create-repo
+raptr add-component production/category1
+
+ratpr add backend file://path/to/raptr/repo
+raptr add backend s3://bucket-name-us-east-1/directory
+raptr add backend s3://bucket-name-us-west-1/directory
+raptr add backend s3://bucket-name-us-west-2/directory
+
+raptr add backend s3://some-new-bucket/directory (totally empty)
+
+ratpr add package /path/to/packages \
+	--section production/category1 \
+	--section staging/category1
+	# copies the incoming packages to the configured backends
+	# and updates local master-index.json
+
+ratpr remove package <package-name> (mark item for deletion at next sync???)
+
+# doesn't update master-index.json--instead, it generates the various
+# "apt" files, e.g. Release[.gz], Sources[.gz], Packages[.gz], etc.
+# and uploads them to the configured backend
+git commit -am "Added new packages..."
+git push origin master
+
+raptr publish (uploads generated apt index files to configured backends)
+
+
+master-index.json
+[
+	"components": [ "production/category1", "production/category2", "production/category3", "..." ]
+	"packages": [
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+	]
+]
+
+
+
+(version) = 1.0.1 | all | latest
+
+raptr
+	init
+	backend add [name] [url]
+	backend remove [name]
+
+	distribution add [name] (name is the path)
+	distribution remove [name]
+	category add [name] to [distribution-names...]
+	category remove [name] to [distribution-names...]
+
+	package add /path/to/single-debian-file.deb|dsc to [category-name]
+	package remove [package-name] (version)
+	package link [package-name] (version) to [distribution-name]
+	package unlink [package-name] (version) from [distribution-name]
+
+	bundle add [bundle-alias] /path/to/package/files (version [or discover from files]) to [category-name]
+	bundle remove [bundle-alias] (version)
+	bundle link [bundle-alias] (version) to [distribution-name]
+	bundle unlink [bundle-alias] (version) from [distribution-name]
+
+	publish (backend-name)
+	purge (backend-name)
+
+	# uploads to s3 should always include md5
+	# remember that a name can be shared by multiple packages
+	# each of which contain the same name, but different versions and CPU architecures
+	# during upload (add), if file isn't duplicate, give it a unique name...
+
+raptr init
+raptr backend add aws-us-west-1 s3://raptr-us-west-1/debian/
+raptr backend add aws-us-west-2 s3://raptr-us-west-1/debian/
+raptr backend add aws-us-east-1 s3://raptr-us-west-1/debian/
+raptr backend add local file://some-directory
+raptr section add /production/category1
+
+raptr bundle add some-package /path/to/some-package/debian-stuff
+raptr bundle link some-package /production/category1
+raptr publish
+
+
+# ideally, all of the below commands are idempotent
+
+raptr section add production/category1
+raptr section add staging/category1
+raptr section add production/category2
+raptr section add staging/category2
+raptr section remove testing/category1 (removes all packages, if any)
+
+# permissions to s3 are assumed as part of the s3 credentials AWS_ACCESS_KEY AWS_SECRET_KEY
+raptr backend add some-name s3://smartystreets/debian/
+ratpr backend remove some-name
+raptr backend add another-name file:///directory/name
+ratpr backend remove another-name
+
+"some-package" is our local alias and generally applies to the name of a package
+
+raptr package add some-package /path/to/deb/files # performs backend upload and then generates event
+raptr package remove some-package (--all|--latest|--<version>)
+
+raptr package link some-package (--all|--latest|--<version>) production/category1
+# removes from various sections, actual dangling files cleaned up on purge
+raptr package unlink some-package (--all|--latest|--<version>) production/category1
+
+# TODO: what about subordinate packages generated as part of some-package?
+# how to we get those to be part of a given section?
+
+raptr update optional-backend-name-or-default-to-all --sign # publish to backends # sign = gpg
+raptr purge # figure out what "pool/*" should look like and remove any extra files
+
+/pool/public/h/haproxy/haproxy_1.5.0-1_amd64.deb
+
+[
+	{"section-added", {"section":"production/category1"}},
+	{"section-removed",{"section":"production/category1"}},
+]
+
+SectionAdded
+SectionRemoved
+
+BackendAdded {"Name:", "raptr-us-east-1", "url":"s3://rapt-us-east-1/debian", options:"Encrypt|ReducedRedundancy|...|etc"}
+BackendRemoved { "Name": "raptr-us-east-1" }
+
+PackageAdded
+PackageRemoved (optional package version information, e.g. 1.0.1, all/*/blank?, and latest)
+
+PackageLinked (optional package  version information, e.g. 1.0.1, all/*/blank?, and latest)
+PackageUnlinked (optional package  version information, e.g. 1.0.1, all/*/blank?, and latest)
+
+
+
+is event sourcing really needed here?
+the file continues to grow indefinitely with no way to purge
+easy for concurrency stuff, harder for everything else
+granted, it's super easy to diff and compresses really, really well
+and it can also be re-engineered without much trouble...
+
+
+give aptly another try
+perhaps it really can work in the scenarios that we want--just try it a little bit
+no, it doesn't do concurrency and that's okay
+but as long as we can sync to s3 and not have the entire pool directory, we're good
+make sure it can do "read-your-writes" consistency with "US Standard" region (Virginia+Oregon)
+
+deb-s3 (ruby) looks very, very promising--it appears to support the workflow we want
+(no source packages)
+
+
+master.json
+----------------
+backends: [ { "name": "test-backend", "url": "s3://raptr-us-east-1/debian" }, ... ]
+distributions: [ "production", "testing", "staging" ]
+categories: [ "category1", "category2", "category3", "category4", "public" ]
+
+which package(s)/bundles are in which categories
+which packges(s)/bundles are in which distributions
+which files are located where? and what is its MD5/SHA1?
+what packages are there? what versions exist?
+
+Rather than creating a one-size structure? why not project events?
+Events are a complete representation of the occurrence
+14 different events
+
