@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 func main() {
 	if store, err := NewEventStore("test.json"); err != nil {
@@ -8,12 +11,18 @@ func main() {
 	} else if record, err := store.Next(); err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Printf("%#v\n", record)
+		fmt.Print(record.MetaRecord())
+		text, _ := json.Marshal(record.Message)
+		fmt.Println(string(text))
+		//fmt.Printf("%#v\n", record)
 
 		if record, err = store.Next(); err != nil {
 			fmt.Println(err)
 		} else {
-			fmt.Printf("%#v\n", record)
+			fmt.Print(record.MetaRecord())
+			text, _ := json.Marshal(record.Message)
+			fmt.Println(string(text))
+			// fmt.Printf("%#v\n", record)
 		}
 	}
 }

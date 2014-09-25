@@ -20,14 +20,14 @@ func NewEventStore(filename string) (*EventStore, error) {
 		return &EventStore{
 			handle: handle,
 			reader: bufio.NewReaderSize(handle, bufferSize),
-		}
+		}, nil
 	}
 }
 
-func (this *EventStore) Next() (*StorageMeta, error) {
+func (this *EventStore) Next() (*EventStoreRecord, error) {
 	if metaText, err := this.reader.ReadString('\n'); err != nil {
 		return nil, err
-	} else if meta, err := ParseMeta(metaText); err != nil {
+	} else if meta, err := ParseMetaRecord(metaText); err != nil {
 		return nil, err
 	} else if payload, err := this.reader.ReadBytes('\n'); err != nil {
 		return nil, err

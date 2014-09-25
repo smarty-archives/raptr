@@ -2,18 +2,20 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
 
-type StorageMeta struct {
+type EventStoreRecord struct {
 	Sequence uint64
 	Date     time.Time
 	Message  interface{}
 }
 
-func ParseMeta(meta string) (*StorageMeta, error) {
+func ParseMetaRecord(meta string) (*EventStoreRecord, error) {
 	if meta = strings.TrimSpace(meta); len(meta) < 3 {
 		return nil, errors.New("Meta record not found.")
 	} else if split := strings.Split(meta[3:], ","); len(split) != expectedMetaElements {
@@ -25,7 +27,7 @@ func ParseMeta(meta string) (*StorageMeta, error) {
 	} else if message, err := newMessage(split[typeIndex]); err != nil {
 		return nil, err
 	} else {
-		return &StorageMeta{Sequence: sequence, Date: time.Unix(instant, 0), Message: message}, nil
+		return &EventStoreRecord{Sequence: sequence, Date: time.Unix(instant, 0), Message: message}, nil
 	}
 }
 
@@ -41,8 +43,9 @@ func newMessage(name string) (interface{}, error) {
 	return nil, errors.New("Unable to find type:" + name)
 }
 
-func (this *StorageMeta) String() string {
-	return ""
+func (this *EventStoreRecord) MetaRecord() string {
+	messageType := reflect.TypeOf(this.Message).Elem().Name()
+	return fmt.Sprintf("// %d,%d,%s\n", this.Sequence, this.Date.Unix(), messageType)
 }
 
 const (
