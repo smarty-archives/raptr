@@ -21,7 +21,7 @@ func (this *EventStoreWriter) Write(record *EventStoreRecord) error {
 	messageType := reflect.TypeOf(record.Message).Elem().Name()
 	now := time.Now()
 
-	if serialized, err := json.Marshal(record.Message); err != nil {
+	if serialized, err := json.MarshalIndent(record.Message, "", "  "); err != nil {
 		return err
 	} else if fmt.Fprintf(this.writer, metaRecordFormat, this.sequence, now.Unix(), len(serialized), messageType); err != nil {
 		return err
