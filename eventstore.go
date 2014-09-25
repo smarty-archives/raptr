@@ -18,12 +18,15 @@ func NewEventStore(filename string) (*EventStore, error) {
 	if handle, err := os.Open(filename); err != nil {
 		return nil, err
 	} else {
-		reader := bufio.NewReaderSize(handle, bufferSize)
-		return &EventStore{
-			handle:  handle,
-			reader:  reader,
-			decoder: json.NewDecoder(reader),
-		}, nil
+		return NewEventStoreReader(handle), nil
+	}
+}
+func NewEventStoreReader(handle *os.File) *EventStore {
+	reader := bufio.NewReaderSize(handle, bufferSize)
+	return &EventStore{
+		handle:  handle,
+		reader:  reader,
+		decoder: json.NewDecoder(reader),
 	}
 }
 
