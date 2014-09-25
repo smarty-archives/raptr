@@ -11,7 +11,7 @@ func main() {
 	} else if store := NewEventStoreReader(handle); store == nil {
 		fmt.Println("Couldn't create eventstore")
 	} else {
-		writer := NewEventStoreWriter(os.Stdout)
+		writer := NewEventStoreWriter(0, os.Stdout)
 
 		for {
 			if record, err := store.Read(); err != nil {

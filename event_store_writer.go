@@ -5,24 +5,36 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"time"
 )
 
 type EventStoreWriter struct {
-	writer  io.Writer
-	encoder *json.Encoder
+	sequence uint64
+	writer   io.Writer
 }
 
-func NewEventStoreWriter(writer io.Writer) *EventStoreWriter {
-	return &EventStoreWriter{writer: writer, encoder: json.NewEncoder(writer)}
+func NewEventStoreWriter(sequence uint64, writer io.Writer) *EventStoreWriter {
+	return &EventStoreWriter{sequence: sequence + 1, writer: writer}
 }
 
 func (this *EventStoreWriter) Write(record *EventStoreRecord) error {
 	messageType := reflect.TypeOf(record.Message).Elem().Name()
-	if _, err := fmt.Fprintf(this.writer, metaRecordFormat, messageType); err != nil {
+	now := time.Now()
+
+	if serialized, err := json.Marshal(record.Message); err != nil {
+		return err
+	} else if fmt.Fprintf(this.writer, metaRecordFormat, this.sequence, now.Unix(), len(serialized), messageType); err != nil {
+		return err
+	} else if _, err := this.writer.Write(serialized); err != nil {
+		return err
+	} else if _, err := this.writer.Write([]byte("\n")); err != nil {
 		return err
 	} else {
-		return this.encoder.Encode(record.Message)
+		this.sequence++
+		record.Date = now
+		record.PayloadLength = uint64(len(serialized))
+		return nil
 	}
 }
 
-const metaRecordFormat = "// %s\n"
+const metaRecordFormat = "// %d,%d,%d,%s\n"
