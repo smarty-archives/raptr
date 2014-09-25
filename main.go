@@ -1,28 +1,26 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"os"
 )
 
 func main() {
-	if store, err := NewEventStore("test.json"); err != nil {
+	if handle, err := os.Open("test.json"); err != nil {
 		fmt.Println(err)
-	} else if record, err := store.Next(); err != nil {
-		fmt.Println(err)
+	} else if store := NewEventStoreReader(handle); store == nil {
+		fmt.Println("Couldn't create eventstore")
 	} else {
-		fmt.Print(record.MetaRecord())
-		text, _ := json.Marshal(record.Message)
-		fmt.Println(string(text))
-		//fmt.Printf("%#v\n", record)
+		writer := NewEventStoreWriter(os.Stdout)
 
-		if record, err = store.Next(); err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Print(record.MetaRecord())
-			text, _ := json.Marshal(record.Message)
-			fmt.Println(string(text))
-			// fmt.Printf("%#v\n", record)
+		for {
+			if record, err := store.Read(); err != nil {
+				fmt.Println("Reading:", err)
+				break
+			} else if err := writer.Write(record); err != nil {
+				fmt.Println("Writing:", err)
+				break
+			}
 		}
 	}
 }
