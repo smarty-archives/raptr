@@ -6,21 +6,23 @@ import (
 )
 
 func main() {
-	if handle, err := os.Open("test.json"); err != nil {
+	handle, err := os.Open("test.json")
+	if err != nil {
 		fmt.Println(err)
-	} else if store := NewEventStoreReader(handle); store == nil {
-		fmt.Println("Couldn't create eventstore")
-	} else {
-		writer := NewEventStoreWriter(0, os.Stdout)
+		return
+	}
+	defer handle.Close()
 
-		for {
-			if record, err := store.Read(); err != nil {
-				fmt.Println("Reading:", err)
-				break
-			} else if err := writer.Write(record); err != nil {
-				fmt.Println("Writing:", err)
-				break
-			}
+	reader := NewEventStoreReader(handle)
+	writer := NewEventStoreWriter(0, os.Stdout)
+
+	for {
+		if record, err := reader.Read(); err != nil {
+			fmt.Println("Reading:", err)
+			break
+		} else if err := writer.Write(record); err != nil {
+			fmt.Println("Writing:", err)
+			break
 		}
 	}
 }
