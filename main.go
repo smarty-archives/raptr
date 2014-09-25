@@ -8,9 +8,14 @@ func main() {
 	} else if record, err := store.Next(); err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Printf("%#v", record)
+		fmt.Printf("%#v\n", record)
+
+		if record, err = store.Next(); err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("%#v\n", record)
+		}
 	}
-	// fmt.Println(time.Now().Format(time.RFC3339Nano))
 }
 
 // various projections for different purposes:

@@ -3,13 +3,15 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"os"
 )
 
 type EventStore struct {
-	handle  *os.File
-	reader  *bufio.Reader
-	decoder *json.Decoder
+	handle   *os.File
+	reader   *bufio.Reader
+	decoder  *json.Decoder
+	sequence uint64
 }
 
 func NewEventStore(filename string) (*EventStore, error) {
@@ -32,7 +34,10 @@ func (this *EventStore) Next() (interface{}, error) {
 		return nil, err
 	} else if err := this.decoder.Decode(meta.Message); err != nil {
 		return nil, err
+	} else if meta.Sequence != this.sequence+1 {
+		return nil, errors.New("Record out of sequence")
 	} else {
+		this.sequence++
 		return meta.Message, nil
 	}
 }
