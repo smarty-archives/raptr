@@ -14,7 +14,9 @@ type StorageMeta struct {
 }
 
 func ParseMeta(meta string) (*StorageMeta, error) {
-	if split := strings.Split(meta, "|"); len(split) != expectedMetaElements {
+	if meta = strings.TrimSpace(meta); len(meta) < 3 {
+		return nil, errors.New("Meta record not found.")
+	} else if split := strings.Split(meta[3:], "|"); len(split) != expectedMetaElements {
 		return nil, errors.New("Malformed meta record.")
 	} else if sequence, err := strconv.ParseUint(split[sequenceIndex], base10, uintBits); err != nil {
 		return nil, errors.New("Malformed sequence in meta record.")
@@ -31,7 +33,7 @@ func newMessage(name string) (interface{}, error) {
 	// TODO
 	switch name {
 	case "BundleAdded":
-		return BundleAdded{}, nil
+		return &BundleAdded{}, nil
 	}
 
 	return nil, errors.New("Unable to find type:" + name)
@@ -42,6 +44,7 @@ func (this *StorageMeta) String() string {
 }
 
 const (
+	removeLeadingComment = 3
 	base10               = 10
 	uintBits             = 64
 	expectedMetaElements = 3

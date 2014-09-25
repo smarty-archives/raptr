@@ -1,6 +1,16 @@
 package main
 
+import "fmt"
+
 func main() {
+	if store, err := NewEventStore("test.json"); err != nil {
+		fmt.Println(err)
+	} else if record, err := store.Next(); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("%#v", record)
+	}
+	// fmt.Println(time.Now().Format(time.RFC3339Nano))
 }
 
 // various projections for different purposes:
