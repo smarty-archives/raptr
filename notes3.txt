@@ -1,0 +1,196 @@
+Simple RAPTR with caching and concurrency:
+
+1. Localized (plaintext copy of critical files): Packages and Sources files are the only ones that actually matter
+   root Release file matters because it contains hashes of all files and if that file changes in any capacity
+   then we know something's and we must download those files, or rather, we must use the differing values
+   which we don't have locally....[research this] [should we download all Padckages and Sources files to cache
+   locally]. They aren't too big. Also, it appears that official ubuntu repos only contain compressed versions
+   of the Packages and Sources files
+
+2. Look for local copy (based upon remote URL), if not there, download it and then use local/cached copy
+   MD5 of local copy is critical to remember for concurrency
+
+3. Per command line instruction (add, remove, etc.) we update the appropriate Packages and Sources files
+
+4. Generate the compressed bz2 (or gz) Packages and Sources archives AND the root Release file
+
+S3 has List command gets the metadata (md5/etag) which allows an at-a-glance answer to the "has anything changed?" question
+
+once the files are valiated to be authentic debian files, uploading the deb|dsc-related files should be done almost first
+this allows the upload portion to start while the checksum calculations, etc. are occuring
+
+if the files aleady exist remotely (and have the same hash), we're done.
+any file that already exists remotely but with a different hash should be uploaded under a different filename
+also watch the constraint that the name/version/architecture servers as a kind of unique/primary key
+http://www.aptly.info/doc/feature/duplicate/
+the only exception to this is when they are held under different distributions
+
+It may be worth downloading all sources and packages files for a given distribution?
+i suppose it very much depends upon the incoming files, e.g. if they're only source files, etc.
+
+raptr add "package-name/ver" /path/to/debian/files s3://bucket-name/folder1/folder2/folder3 production main
+ratpr remove "package-name/ver"??? (newest|all|version) s3://bucket-name/folder1/folder2/folder3 production main # remove will be done later
+(this is annoying for multi-package uploads...each package must be explicitly removed)
+
+ignore local cache (for a while--it's complexity we don't really need and it doesn't buy us much)
+1. download Releases file, it helps us get a "lay of the land" to know what categories and architectures exist. [remember etag]
+2. download all Packages/Sources file for each category and architecture [remember etag]
+3. parse Packages/Sources file to understand what files exist in the /pool directory
+4. based upon the files that exist in this package, we now want to upload our deb|dsc|tar.(gz|bz2|xz) files to the pool
+   a. determine which files already exist in the pool by looking at Packages/Sources (skip dups that exist at same location)
+   b. if collision on filename, but different etag/md5, upload to different name (loop until unique name found)
+5. once files have been uploaded and location is known (this is why event sourcing is so powerful here because we don't have to guess)
+   we generate the changed Packages and Sources files and calculate the checksums md5/sha1/sha512
+6. generate a new Releases file
+
+7. upload releases file (download to check if changed first, if changed go to step 2)
+8. upload compressed Packages/Sources files
+
+- parse various deb|dsc files (dsc gives name of dependent files) to determine
+   if they are well formed and not corrupted or missing files
+- download root Releases file [ensure md5 integrity after download]
+- download all Packages/Sources files [ensure md5 integrity after download]
+- append deb|dsc control information to respective Packages/Sources list (true = added, false = duplicate)
+- generate Releases file (take hashes of each Packages/Sources file)
+- upload and package+version+arch that don't already exist in the manifest list.
+- upload Releases file and dirty/modified Sources/Packages files
+
+event sourcing is WAY better at concurrency for this kind of stuff
+because we can find out EXACTLY what happened and know what it means
+
+Ignore concurrency for a minute
+
+- parse deb|dsc files and check integrity
+- download Releases file and check download integrity
+- download various Packages/Sources files and check download integrity
+- append deb|dsc control information to respective Packages/Sources list
+- generate Packages/Sources/Release files
+- upload deb|dsc|tar.gz files to pool (overwriting anything already there...)
+- upload Packages/Sources/Release[.gpg] files
+
+
+
+Ideal workflow = local cache of events (source control?) + download remote
+replay all events, upload generated indexes
+
+
+Ideal workflow:
+1. parse deb|dsc files and check integrity
+2. download remote master.json.bz2 file (and check integrity)
+3. replay master.json file
+4. append deb|dsc events
+5. download master.json providing original etag--if changed, go to step 2
+6. upload master.json--if changed after uploaded, go to step 2
+7. generate respective Packages|Sources|Release info
+8. start uploading deb|dsc|tar.gz files
+9. upload Packages|Sources|Release
+
+Any interaction with the remote|target|backend should be through an abstraction
+that handles upload|download integrity checks, etc.
+
+first and foremost:
+0. parse|verify dsc|deb control files and integrity of dsc|deb files themselves
+1. generation of repository from the replaying of events to a local mirror
+2. adding new packages to repository and replaying events
+2. generation of repository from the replaying of events to a remote mirror (S3)
+
+bundle = only support bundle with the same version, e.g. liveaddress-streetapi bundle must all have the same version
+if package already exists (name+arch+ver) = err
+
+only work with things as bundles for right now?
+get rid of category add/remove?
+get rid of dist add/remove
+get rid of backend/mirror add/remove?
+
+each should be considered a true mirror and can have no variation
+why not use "pip install awscli" and then 
+aws s3 sync s3://source_bucket s3://target_bucket --source-region us-east-1 --region us-west-1
+
+http://superuser.com/questions/213129/how-to-get-100-identical-compressed-files-for-source-files-that-only-differ-in
+gzip -n doesn't save original filename or timestamp and helps produce identical files
+
+raptr
+
+remote apt repository
+
+download manifest
+update manifest
+upload files
+upload manifests
+
+rather than making there be a single master copy, let each repo evolve independently...
+how to attach an existing package to a new distribution?
+ratpr link should still work
+
+I like this directory structure because it's really easy to find the bundle at a particular
+version and remove it; it's also really easy to discover all files that exist as part of a particular bundle:
+note: bundle name = /pool/category/(first letter of bundle)/(bundle name)/(version)
+
+remove/link/unlink: don't have a "latest" or "newest" version option--just have all and *specific* version
+let's make version required for remove/link/unlink such that it's a specific version or the test "all"
+
+ADD action:
+   parse local DEB|DSC files and verify integrity, etc.
+      (all files in a bundle must the same version!)
+   download various manifest files (if there are any)
+      (check integrity of received based upon Release contents and verify Release via Release.gpg)
+      (with retry for failed integrity checks and/or network issues)
+   parse manifiest files
+   update manifests + sign
+   upload deb|dsc|orig files
+      (with retry for intermittent failures and Content-MD5 mismatch problems)
+      /pool/<category>/<first letter>/<package name>/<version>/bundles files...
+      (any duplicate files name+arch+version will print out as "SKIPPED: already exists.")
+   upload manifests
+      (with retry for intermittent failures and Content-MD5 mismatch problems)
+      (no concurrency checks just yet)
+
+REMOVE (package|bundle) action:
+   download various manifest files (if there are any)
+      (check integrity of received based upon Release contents and verify Release via Release.gpg)
+      (with retry for failed integrity checks and/or network issues)
+   parse manifiest files
+
+   packages and expected versions must exist, print info if they dont
+
+   update manifest according to action + sign
+   upload manifests
+      (with retry for intermittent failures and Content-MD5 mismatch problems)
+      (no concurrency checks just yet)
+
+LINK action:
+   download various manifest files (if there are any)
+      (check integrity of received based upon Release contents and verify Release via Release.gpg)
+      (with retry for failed integrity checks and/or network issues)
+   parse manifiest files
+   update manifest according to action + sign
+   upload manifests
+      (with retry for intermittent failures and Content-MD5 mismatch problems)
+      (no concurrency checks just yet)
+
+UNLINK action:
+   download various manifest files (if there are any)
+      (check integrity of received based upon Release contents and verify Release via Release.gpg)
+      (with retry for failed integrity checks and/or network issues)
+   parse manifiest files
+   update manifest according to action + sign
+   upload manifests
+      (with retry for intermittent failures and Content-MD5 mismatch problems)
+      (no concurrency checks just yet)
+
+PURGE action:
+   download various manifest files (if there are any)
+      (check integrity of received based upon Release contents and verify Release via Release.gpg)
+      (with retry for failed integrity checks and/or network issues)
+   parse manifiest files to know what's still valid
+   based upon S3 time, sweep every unlinked file older than X minutes
+
+concurrent:
+   - parse incoming DEB|DSC stuff (if any)
+   - download Release and then all Packages|Sources files (try gz, bz2, or plaintext)
+   - verify integrity of Packages|Sources files
+
+Network-based operations:
+   Retry based upon network issues and integrity issues
+   Release.gpg (integrity of Release file) (problem: if we don't have public keys locally???) (use AWS MD5?)
+   Release (interity of various Package|Sources files)
