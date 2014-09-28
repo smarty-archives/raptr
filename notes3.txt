@@ -2,7 +2,7 @@ Simple RAPTR with caching and concurrency:
 
 1. Localized (plaintext copy of critical files): Packages and Sources files are the only ones that actually matter
    root Release file matters because it contains hashes of all files and if that file changes in any capacity
-   then we know something's and we must download those files, or rather, we must use the differing values
+   then we know something and we must download those files, or rather, we must use the differing values
    which we don't have locally....[research this] [should we download all Padckages and Sources files to cache
    locally]. They aren't too big. Also, it appears that official ubuntu repos only contain compressed versions
    of the Packages and Sources files

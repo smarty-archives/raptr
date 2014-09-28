@@ -16,7 +16,7 @@ Distribution = Suite + Codename?
 s3 uploader will need to know the hashes of all remote index files to know if they should be updated
 if the hash has not changed, don't upload
 
-In the architecture-specific "Relase" files: 
+In the architecture-specific "Release" files: 
 	For "Archive:" stanza, suite names ("stable", "testing", "unstable", …) are used in the Debian archive while codenames ("dapper", "feisty", "gutsy", "hardy", "intrepid", …) are used in the Ubuntu archive
 
 The only "hard" files are Packages and Sources

@@ -114,6 +114,8 @@ Local/FileSystemRemote
 ConcurrentRemote
 	enforces the consistency model on the request by performing a HEAD request
 	before and after the request as desired
+	skips PUT where the MD5 hasn't changed (with chaos concurrency model); if MD5 hasn't changed,
+	  skips upload but will check MD5 using VerifyAfterUpload/Pessemistic head request
 RetryRemote
 	watches for connection-related errors and performs a retry on the item up to N times
 S3Remote
@@ -130,7 +132,21 @@ Priorities:
 [Last] Release.gpg generation
 [Last] Command line interface
 [Soon] Various hashes, e.g. MD5, SHA1, SHA256?
-[Later] Link and unlink to/from distribution (for package bundles and individual files)
+[Later/Future?] Link and unlink to/from distribution (for package bundles and individual files)
 [Later] Delete behavior (for package bundles and individual files)
+	(needs to download the Release file for each distribution and parse it
+ 	 so that it knows which pool files are in use and which are not
 [Later] Sweep/Purge/Clean behavior
 [Future] DryRun
+
+link/unlink is a bit more difficult because we're crossing distribution boundaries
+we're reading from at least TWO different sets of Release+Sources|Packages files
+(even though we're using the same pool) and then we're linking them together
+we could perform a LIST command at the root of the repo to get a list of all categories
+and then get the Release file and finally the Sources|Packages file for each
+we need a higher level of abstraction called Distribution that
+understands what/how that can work with a backend to get a Release file
+and then gets the various Sources|Releases files and parses and understands them
+and we can use those to add/remove packages/files to them
+(and perhaps they can verify the integrity of the deb|dsc) files that are added?
+(perhaps a Distribution instance can verify the integrity of the added files?)
