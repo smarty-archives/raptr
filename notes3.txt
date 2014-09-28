@@ -202,21 +202,21 @@ Network-based operations:
    Release (interity of various Package|Sources files)
 
 ----------------------------------
-Operations: package add/remove, link add/remove
+Operations: package add/remove, link add/remove, sweep
 
 unless otherwise indicated, package- and link-based operations operate on the package bundle
  meaning all package generated as a result of a single source code compilation at a particular version
  - all bundle files must share the exact same version
- any package- and link-based operations the work on a specific package must reference the package *filename* explictly,
+ any package- and link-based operations that work on a specific package must reference the package *filename* explictly,
  otherwise everything will be kept together as a single bundle--meaning all related packages regardless of name or arch,
  it will still be possible to operate on specific version
 
-version is either a specific version or all and must be explicitly specified in all cases
-  implicit behavior based upon version is to vague and therefore likely to have undesirable consequences
+version is either a specific version or "all" and must be explicitly specified in all cases
+  implicit behavior based upon version is to vague and therefore likely to have significant and undesirable consequences
 
 all network-based operations will have a retry-based operation with timeouts as well as an upper limit of retries
   and gets/puts from our code will always verify the MD5. Any files in the collection of files to be put
-  that don't already have an MD5 computed will have their hash computed as they're put to S3.
+  that don't already have an MD5 computed will have their hash computed as they're put to S3. (when would this happen?)
 
   Question: how do we solve the repo in inconsistent state problem? e.g. Releases updated but utilizing older Packages
    or Sources files because previous operations didn't complete? In that scenario, it makes sense to have some kind of
@@ -230,7 +230,7 @@ all network-based operations will have a retry-based operation with timeouts as 
    download. By avoiding Release.gpg download, we don't have to verify the Release but we still get integrity checks
    on Packages and Sources. Also, we should probably only upload a single kind of file, e.g. Sources.gz or Sources.bz2
    depending upon Ubuntu 14.04 apt capabilities. It appears that we can easily use only gz compress without trouble
-   (bz2 looks like it's on the way out)
+   (bz2 looks like it's on the way out, but older. xz is the successor to gz but not installed by default on OSX)
    CONCLUSION: S3 list on bucket/folder/folder/folder/dist and get a list of Packages.gz and Sources.gz files.
    We're going to ignore plaintext, bz2, and xz files, if they exist. Perhaps the one disadvantage of this
    is that we're now tied to an S3-specific operation that we didn't have before. We might still use the Releases
@@ -239,13 +239,14 @@ all network-based operations will have a retry-based operation with timeouts as 
 
 files to upload: overwrite if exists? (and not listed in the manifest)
    because of the change for partial batch uploads (uploads where multiple files are involved), we are okay with
-   uploading and overwriting files that are already there if they're not explictly in a manifest file
+   uploading and overwriting files that are already there if they're not explictly in a manifest files
    As an optimization, we could do a HEAD check on the file to see if it's a true duplicate of what we've
-   got locally, if it is, skip it.
+   got locally, if it is, skip it. but why bother? just upload and overwrite. i suppose if the file is over
+   a pre-determined size, e.g. N MB then we should do a head check and decide what to do.
 
    Also, there's a difference between skipping a package+arch+version that already exists (and may have a diff) hash
    vs not uploading a file that already exists in the specific location...
 
 during remove operations, I like the idea of removing bundles (based upon name) as well as removing specific files
-based upon full path to the file. only deb's and dsc's can be removed. orig.tar.gz can't be removed--the dsc file must
-be and the orig.tar.gz will be nuked during the next purge/sweep/vacuum operation.
+based upon the filename (pkg name+verion+arch). only deb's and dsc's can be removed. orig.tar.gz can't be removed
+the orig.tar.gz will be nuked during the next purge/sweep/vacuum operation.
