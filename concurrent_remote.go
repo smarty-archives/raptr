@@ -5,6 +5,11 @@ import (
 	"errors"
 )
 
+// Designed to ensure that multiple writers (different processes or different machines)
+// can be aware of each other to allow reconciliation of multiple, concurrent changes
+// Requires "read your writes" consistency which S3 can provide--even in US Standard
+// so long as we're targeting the s3-external-1.amazonaws.com when looking at US Standard
+// buckets, or using any other region, we're fine.
 type ConcurrentRemote struct {
 	inner Remote
 }
@@ -14,38 +19,28 @@ func NewConcurrentRemote(inner Remote) *ConcurrentRemote {
 }
 
 func (this *ConcurrentRemote) Put(request PutRequest) PutResponse {
-	if request.Concurrency == ChaosConcurrency {
-		return this.inner.Put(request)
-	}
-
-	if err := checkFile(request, CheckBeforePut); err != nil {
+	if err := this.ensureContents(request, CheckBeforePut); err != nil {
 		return PutResponse{Path: request.Path, Error: err}
+	} else if response := this.inner.Put(request); response.Error != nil {
+		return response
+	} else if err := this.ensureContents(request, CheckAfterPut); err != nil {
+		return PutResponse{Path: request.Path, Error: err}
+	} else {
+		return response
 	}
-
-	if request.Concurrency&CheckAfterPut == CheckAfterPut {
-	}
-
-	return this.inner.Put(request)
 }
-func (this *ConcurrentRemote) checkFile(request PutRequest, concurrency int) error {
+func (this *ConcurrentRemote) ensureContents(request PutRequest, concurrency int) error {
 	if request.Concurrency&concurrency != concurrency {
 		return nil
+	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
+		return response.Error
+	} else if bytes.Compare(request.ExpectedMD5, response.MD5) != 0 {
+		return ConcurrencyError
+	} else {
+		return nil
 	}
-
-	if request.Concurrency&CheckBeforePut == CheckBeforePut {
-		response := this.inner.Head(HeadRequest{Path: request.Path})
-		if response.Error != nil {
-			return PutResponse{Path: request.Path, Error: response.Error}
-		} else if bytes.Compare(request.ExpectedMD5, response.MD5) {
-			return ConcurrencyError
-		}
-	}
-
 }
 
-func (this *ConcurrentRemote) Delete(request DeleteRequest) DeleteResponse {
-	return this.inner.Delete(request)
-}
 func (this *ConcurrentRemote) Get(request GetRequest) GetResponse {
 	return this.inner.Get(request)
 }
@@ -54,6 +49,9 @@ func (this *ConcurrentRemote) List(request ListRequest) ListResponse {
 }
 func (this *ConcurrentRemote) Head(request HeadRequest) HeadResponse {
 	return this.inner.Head(request)
+}
+func (this *ConcurrentRemote) Delete(request DeleteRequest) DeleteResponse {
+	return this.inner.Delete(request)
 }
 
 var ConcurrencyError = errors.New("The remote file is different from what was expected.")
