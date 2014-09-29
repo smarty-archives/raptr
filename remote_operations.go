@@ -8,7 +8,7 @@ import (
 type (
 	GetRequest struct {
 		Path        string
-		ExpectedMD5 []byte
+		ExpectedMD5 []byte // empty if we don't care
 	}
 
 	GetResponse struct {
@@ -38,7 +38,8 @@ type (
 type (
 	PutRequest struct {
 		Path        string
-		MD5         []byte
+		MD5         []byte // empty if we don't care
+		ExpectedMD5 []byte // empty if we don't care
 		Contents    io.Reader
 		Concurrency int
 		Overwrite   int
@@ -80,9 +81,9 @@ type (
 )
 
 const (
-	ChaosConcurrency = iota
-	CheckBeforePut
-	CheckAfterPut
+	ChaosConcurrency = 0
+	CheckBeforePut   = 1 << iota
+	CheckAfterPut    = 1 << iota
 )
 
 const (
