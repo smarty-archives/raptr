@@ -43,3 +43,31 @@ the orig.tar.gz will be nuked during the next purge/sweep/vacuum operation.
 
 What good is the Releases file in each distribution during normal operations? The only reason we might use it
 is to discover what Packages|Sources files exist. Thus far, it doesn't appear to be helping us much.
+
+
+Priorities:
+[Now] DEB/DSC file parsing and integrity checks
+[Soon?] Release file parsing (to find all Sources|Packages files)
+[Soon] Sources|Packages file parsing (to identify all packages and filenames in a distribution)
+[Soon] Compression--just use gzip
+[Soon] Various hashes, e.g. MD5, SHA1, SHA256?
+[Later] Delete behavior (for package bundles and individual files)
+[Later] Sweep/Purge/Clean behavior
+   (needs to download the Release file for each distribution and parse it
+    so that it knows which pool files are in use and which are not
+[Last] Release.gpg generation
+[Last] Command line interface
+[Future] Link and unlink to/from distribution (for package bundles and individual files)
+[Future] DryRun
+
+link/unlink operations are tricky because we're crossing distribution boundaries
+we're reading from at least TWO different sets of Release+Sources|Packages files
+(even though we're using the same pool) and then we're linking them together
+we could perform a LIST command at the root of the repo to get a list of all categories
+and then get the Release file and finally the Sources|Packages file for each
+we need a higher level of abstraction called Distribution that
+understands what/how that can work with a backend to get a Release file
+and then gets the various Sources|Releases files and parses and understands them
+and we can use those to add/remove packages/files to them
+(and perhaps they can verify the integrity of the deb|dsc) files that are added?
+(perhaps a Distribution instance can verify the integrity of the added files?)
