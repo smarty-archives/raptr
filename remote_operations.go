@@ -9,8 +9,8 @@ import (
 
 type (
 	GetRequest struct {
-		Path        string
-		ExpectedMD5 []byte // empty if we don't care
+		Path string
+		// ExpectedMD5 []byte // empty if we don't care
 	}
 
 	// errors resulting from download:
