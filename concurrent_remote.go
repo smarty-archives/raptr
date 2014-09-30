@@ -12,15 +12,15 @@ import (
 // buckets. When using any other region, we're fine.
 // The desired behavior for concurrency-related errors is to restart the entire workflow
 // such that all indexes are re-downloaded and the operation is re-attempted
-type ConcurrentBackend struct {
-	inner Backend
+type ConcurrentRemote struct {
+	inner Remote
 }
 
-func NewConcurrentBackend(inner Backend) *ConcurrentBackend {
-	return &ConcurrentBackend{inner: inner}
+func NewConcurrentRemote(inner Remote) *ConcurrentRemote {
+	return &ConcurrentRemote{inner: inner}
 }
 
-func (this *ConcurrentBackend) Put(request PutRequest) PutResponse {
+func (this *ConcurrentRemote) Put(request PutRequest) PutResponse {
 	if err := this.ensureContents(request, CheckBeforePut); err != nil {
 		return PutResponse{Path: request.Path, Error: err}
 	} else if response := this.inner.Put(request); response.Error != nil {
@@ -31,7 +31,7 @@ func (this *ConcurrentBackend) Put(request PutRequest) PutResponse {
 		return response
 	}
 }
-func (this *ConcurrentBackend) ensureContents(request PutRequest, concurrency int) error {
+func (this *ConcurrentRemote) ensureContents(request PutRequest, concurrency int) error {
 	if request.Concurrency&concurrency != concurrency {
 		return nil
 	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
@@ -43,16 +43,16 @@ func (this *ConcurrentBackend) ensureContents(request PutRequest, concurrency in
 	}
 }
 
-func (this *ConcurrentBackend) Get(request GetRequest) GetResponse {
+func (this *ConcurrentRemote) Get(request GetRequest) GetResponse {
 	return this.inner.Get(request)
 }
-func (this *ConcurrentBackend) List(request ListRequest) ListResponse {
+func (this *ConcurrentRemote) List(request ListRequest) ListResponse {
 	return this.inner.List(request)
 }
-func (this *ConcurrentBackend) Head(request HeadRequest) HeadResponse {
+func (this *ConcurrentRemote) Head(request HeadRequest) HeadResponse {
 	return this.inner.Head(request)
 }
-func (this *ConcurrentBackend) Delete(request DeleteRequest) DeleteResponse {
+func (this *ConcurrentRemote) Delete(request DeleteRequest) DeleteResponse {
 	return this.inner.Delete(request)
 }
 

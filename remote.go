@@ -1,6 +1,6 @@
 package main
 
-type Backend interface {
+type Remote interface {
 	Put(PutRequest) PutResponse
 	Get(GetRequest) GetResponse
 	Delete(DeleteRequest) DeleteResponse
