@@ -10,6 +10,8 @@ import (
 // Requires "read your writes" consistency which S3 can provide--even in US Standard
 // so long as we're targeting the s3-external-1.amazonaws.com when looking at US Standard
 // buckets. When using any other region, we're fine.
+// The desired behavior for concurrency-related errors is to restart the entire workflow
+// such that all indexes are re-downloaded and the operation is re-attempted
 type ConcurrentRemote struct {
 	inner Remote
 }

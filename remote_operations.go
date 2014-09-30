@@ -11,13 +11,19 @@ type (
 		ExpectedMD5 []byte // empty if we don't care
 	}
 
+	// errors resulting from download:
+	// 1. nil = success
+	// 2. MD5 hash/content mismatch
+	// 3. 404 not found / file doesn't exist
+	// 4. permissions
+	// 5. remote/backend unavailable
 	GetResponse struct {
 		Path     string
 		MD5      []byte
 		Created  time.Time
 		Length   uint64
-		Contents io.Reader
-		Error    error
+		Contents io.ReadSeeker // we need to be able to read the entire stream multiple times
+		Error    error         // contains not found errors, backend unavailable, etc.
 	}
 )
 
@@ -38,13 +44,20 @@ type (
 type (
 	PutRequest struct {
 		Path        string
-		MD5         []byte // empty if we don't care
-		ExpectedMD5 []byte // empty if we don't care
-		Contents    io.Reader
+		MD5         []byte        // empty if we don't care
+		ExpectedMD5 []byte        // empty if we don't care
+		Contents    io.ReadSeeker // we need to be able to read the entire stream multiple times
+		Length      uint64        // for streaming large file from filesystem; []byte can be wrapped in a buffer
 		Concurrency int
 		Overwrite   int
 	}
 
+	// errors resulting from upload:
+	// 1. nil = success
+	// 2. MD5 hash/content mismatch
+	// 3. concurrency mismatch (file has changed either before or after writing depending upon desired PUT concurrency)
+	// 4. permissions
+	// 5. remote/backend unavailable
 	PutResponse struct {
 		Path  string
 		Error error
