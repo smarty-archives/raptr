@@ -5,11 +5,11 @@ import (
 	"errors"
 )
 
-// Designed to ensure that multiple writers (different processes or different machines)
-// can be aware of each other to allow reconciliation of multiple, concurrent changes
+// Ensures that multiple writers (different processes or different machines)
+// can be aware of each other to allow reconciliation of potentially conflicting changes.
 // Requires "read your writes" consistency which S3 can provide--even in US Standard
 // so long as we're targeting the s3-external-1.amazonaws.com when looking at US Standard
-// buckets, or using any other region, we're fine.
+// buckets. When using any other region, we're fine.
 type ConcurrentRemote struct {
 	inner Remote
 }
