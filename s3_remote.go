@@ -1,27 +1,36 @@
 package main
 
-// Targets S3 as a remote backend.
-// Should we utilize a custom HTTP transport for things like connection pooling, keep-alive
-// and custom timeouts?
+import (
+	"encoding/hex"
+	"net/http"
+	"path"
+	"strconv"
+	"strings"
+	"time"
+)
+import "github.com/smartystreets/go-aws-auth"
+
 type S3Remote struct {
-	hostname   string // (s3-external-1.amazonaws.com by default unless region name specified via the command line)
-	bucketName string
-	pathPrefix string
-	accessKey  string
-	secretKey  string
+	hostname    string
+	bucketName  string
+	pathPrefix  string
+	credentials awsauth.Credentials
 }
 
 func NewS3Remote(regionName, bucketName, pathPrefix, accessKey, secretKey string) *S3Remote {
 	return &S3Remote{
-		hostname:   resolveHostname(regionName) + ".amazonaws.com",
-		bucketName: bucketName,
-		pathPrefix: pathPrefix,
-		accessKey:  accessKey,
-		secretKey:  secretKey,
+		hostname:    resolveHostname(regionName) + ".amazonaws.com",
+		bucketName:  bucketName,
+		pathPrefix:  pathPrefix,
+		credentials: awsauth.Credentials{AccessKeyID: accessKey, SecretAccessKey: secretKey},
 	}
 }
+
 func resolveHostname(region string) string {
-	region = strings.TrimSpaces(region, " ")
+	return "s3"
+
+	// TODO: anything other than S3 throws off the signing algorithm
+	region = strings.TrimSpace(region)
 	region = strings.ToLower(region)
 
 	switch region {
@@ -45,18 +54,72 @@ func resolveHostname(region string) string {
 
 }
 
-func (this *S3Remote) Get(request GetRequest) GetResponse {
+func (this *S3Remote) Head(operation HeadRequest) HeadResponse {
+	request, _ := http.NewRequest("HEAD", this.composeURL(operation.Path), nil)
+	if response, err := this.executeRequest(request); err != nil {
+		// understand what kind of error this is--it should be transport level, not things like 404, 401, etc., etc.
+		return HeadResponse{Path: operation.Path, Error: RemoteUnavailableError} // TODO: actual errors
+	} else if response.StatusCode == http.StatusNotFound {
+		return HeadResponse{Path: operation.Path, Error: FileNotFoundError}
+	} else {
+		return HeadResponse{
+			Path:    operation.Path,
+			MD5:     parseMD5(response.Header.Get("ETag")),
+			Created: parseDate(response.Header.Get("Last-Modified")),
+			Length:  parseLength(response.Header.Get("Content-Length")),
+			Error:   nil,
+		}
+	}
+
+}
+func (this *S3Remote) Get(operation GetRequest) GetResponse {
+	// create a request (construct the URL)
+	// sign the request
+	// issue the request with appropriate timeouts, etc.
+	// for gets, ensure the content integrity is okay
+	// return the response
 	return GetResponse{}
 }
-func (this *S3Remote) Put(request PutRequest) PutResponse {
+
+func (this *S3Remote) Put(operation PutRequest) PutResponse {
 	return PutResponse{}
 }
-func (this *S3Remote) List(request ListRequest) ListResponse {
+func (this *S3Remote) List(operation ListRequest) ListResponse {
+	// create a request (construct the URL)
+	// sign the request
+	// issue the request with appropriate timeouts, etc.
+	// enumerate the results on S3
+	// return the response
 	return ListResponse{}
 }
-func (this *S3Remote) Head(request HeadRequest) HeadResponse {
-	return HeadResponse{}
-}
-func (this *S3Remote) Delete(request DeleteRequest) DeleteResponse {
+func (this *S3Remote) Delete(operation DeleteRequest) DeleteResponse {
 	return DeleteResponse{}
+}
+func (this *S3Remote) composeURL(file string) string {
+	return "https://" + this.hostname + path.Join("/", this.bucketName, this.pathPrefix, file)
+}
+func (this *S3Remote) executeRequest(request *http.Request) (*http.Response, error) {
+	// TODO: connection pooling? HTTP and TCP keep alive?
+	// SSL negotiation? HTTP request pipelining???
+	// TCP connection timeouts, SSL handshake timeouts
+	// follow redirects policy should re-sign redirects if they are for s3 resources
+	awsauth.Sign(request, this.credentials)
+	client := http.Client{}
+	return client.Do(request)
+}
+func parseMD5(encoded string) []byte {
+	if len(encoded) > 1 && strings.HasPrefix(encoded, `"`) {
+		encoded = encoded[1 : len(encoded)-1] // strip off leading and trailing quotes
+	}
+
+	parsed, _ := hex.DecodeString(encoded)
+	return parsed
+}
+func parseDate(date string) time.Time {
+	parsed, _ := time.Parse("Mon, 2 Jan 2006 15:04:05 MST", date)
+	return parsed
+}
+func parseLength(length string) uint64 {
+	parsed, _ := strconv.ParseUint(length, 10, 64)
+	return parsed
 }
