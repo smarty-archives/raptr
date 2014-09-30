@@ -1,9 +1,6 @@
 package main
 
-import (
-	"bytes"
-	"errors"
-)
+import "bytes"
 
 // Ensures that multiple writers (different processes or different machines)
 // can be aware of each other to allow reconciliation of potentially conflicting changes.
@@ -55,5 +52,3 @@ func (this *ConcurrentRemote) Head(request HeadRequest) HeadResponse {
 func (this *ConcurrentRemote) Delete(request DeleteRequest) DeleteResponse {
 	return this.inner.Delete(request)
 }
-
-var ConcurrencyError = errors.New("The remote file is different from what was expected.")

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"io"
+	"os"
 	"time"
 )
 
@@ -91,6 +93,14 @@ type (
 		Length  uint64
 		MD5     []byte
 	}
+)
+
+var (
+	ConcurrencyError       = errors.New("The remote file is different from what was expected.")
+	ContentIntegrityError  = errors.New("The contents of the file do not match the expected hash.")
+	RemoteUnavailableError = errors.New("The remote system is unavailable or not responding.")
+	AccessDeniedError      = os.ErrPermission
+	FileNotFoundError      = os.ErrNotExist
 )
 
 const (
