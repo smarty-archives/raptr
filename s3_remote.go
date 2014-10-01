@@ -27,8 +27,6 @@ func NewS3Remote(regionName, bucketName, pathPrefix, accessKey, secretKey string
 }
 
 func resolveHostname(region string) string {
-	return "s3"
-
 	// TODO: anything other than S3 throws off the signing algorithm
 	region = strings.TrimSpace(region)
 	region = strings.ToLower(region)
@@ -51,7 +49,6 @@ func resolveHostname(region string) string {
 	default:
 		return "s3-external-1"
 	}
-
 }
 
 func (this *S3Remote) Head(operation HeadRequest) HeadResponse {
