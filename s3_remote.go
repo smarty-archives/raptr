@@ -27,7 +27,6 @@ func NewS3Remote(regionName, bucketName, pathPrefix, accessKey, secretKey string
 }
 
 func resolveHostname(region string) string {
-	// TODO: anything other than S3 throws off the signing algorithm
 	region = strings.TrimSpace(region)
 	region = strings.ToLower(region)
 
@@ -67,7 +66,6 @@ func (this *S3Remote) Head(operation HeadRequest) HeadResponse {
 			Error:   nil,
 		}
 	}
-
 }
 func (this *S3Remote) Get(operation GetRequest) GetResponse {
 	// create a request (construct the URL)
