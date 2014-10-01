@@ -94,11 +94,8 @@ func (this *S3Remote) Put(operation PutRequest) PutResponse {
 	if len(operation.MD5) > 0 {
 		request.Header.Set("Content-MD5", hex.EncodeToString(operation.MD5))
 	}
-	if _, err := this.executeRequest(request); err != nil {
-		return PutResponse{Path: operation.Path, Error: err}
-	} else {
-		return PutResponse{Path: operation.Path, Error: nil}
-	}
+	_, err := this.executeRequest(request)
+	return PutResponse{Path: operation.Path, Error: err}
 }
 func (this *S3Remote) List(operation ListRequest) ListResponse {
 	// create a request (construct the URL)
@@ -110,11 +107,8 @@ func (this *S3Remote) List(operation ListRequest) ListResponse {
 }
 func (this *S3Remote) Delete(operation DeleteRequest) DeleteResponse {
 	request := this.newRequest("DELETE", operation.Path, nil)
-	if _, err := this.executeRequest(request); err != nil {
-		return DeleteResponse{Path: operation.Path, Error: err}
-	} else {
-		return DeleteResponse{Path: operation.Path, Error: nil}
-	}
+	_, err := this.executeRequest(request)
+	return DeleteResponse{Path: operation.Path, Error: err}
 }
 
 func (this *S3Remote) newRequest(method, requestPath string, body io.Reader) *http.Request {
