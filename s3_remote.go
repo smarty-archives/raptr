@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"io"
 	"net/http"
 	"path"
 	"strconv"
@@ -15,6 +16,7 @@ type S3Remote struct {
 	bucketName  string
 	pathPrefix  string
 	credentials awsauth.Credentials
+	client      *http.Client
 }
 
 func NewS3Remote(regionName, bucketName, pathPrefix, accessKey, secretKey string) *S3Remote {
@@ -23,9 +25,9 @@ func NewS3Remote(regionName, bucketName, pathPrefix, accessKey, secretKey string
 		bucketName:  bucketName,
 		pathPrefix:  pathPrefix,
 		credentials: awsauth.Credentials{AccessKeyID: accessKey, SecretAccessKey: secretKey},
+		client:      buildClient(),
 	}
 }
-
 func resolveHostname(region string) string {
 	region = strings.TrimSpace(region)
 	region = strings.ToLower(region)
@@ -49,20 +51,29 @@ func resolveHostname(region string) string {
 		return "s3-external-1"
 	}
 }
+func buildClient() *http.Client {
+	// TODO:
+	// 1. TCP connection timeouts
+	// 2. SSL handshake timeouts
+	// 3. HTTP request pipelining
+	// 4. HTTP keep alive
+	// 5. TCP keep alive
+	// 6. connection pooling
+	// 7. redirect policy--don't follow any?
+	return &http.Client{}
+}
 
 func (this *S3Remote) Head(operation HeadRequest) HeadResponse {
-	request, _ := http.NewRequest("HEAD", this.composeURL(operation.Path), nil)
+	request := this.newRequest("HEAD", operation.Path, nil)
 	if response, err := this.executeRequest(request); err != nil {
-		// understand what kind of error this is--it should be transport level, not things like 404, 401, etc., etc.
-		return HeadResponse{Path: operation.Path, Error: RemoteUnavailableError} // TODO: actual errors
-	} else if response.StatusCode == http.StatusNotFound {
-		return HeadResponse{Path: operation.Path, Error: FileNotFoundError}
+		return HeadResponse{Path: operation.Path, Error: err}
 	} else {
+		header := response.Header
 		return HeadResponse{
 			Path:    operation.Path,
-			MD5:     parseMD5(response.Header.Get("ETag")),
-			Created: parseDate(response.Header.Get("Last-Modified")),
-			Length:  parseLength(response.Header.Get("Content-Length")),
+			MD5:     parseMD5(header.Get("ETag")),
+			Created: parseDate(header.Get("Last-Modified")),
+			Length:  parseLength(header.Get("Content-Length")),
 			Error:   nil,
 		}
 	}
@@ -71,36 +82,51 @@ func (this *S3Remote) Get(operation GetRequest) GetResponse {
 	// create a request (construct the URL)
 	// sign the request
 	// issue the request with appropriate timeouts, etc.
-	// for gets, ensure the content integrity is okay
+	// ***ensure the content integrity is okay***
 	// return the response
 	return GetResponse{}
 }
 
 func (this *S3Remote) Put(operation PutRequest) PutResponse {
-	return PutResponse{}
+	// TODO: consider operation.Overwrite modes
+	request := this.newRequest("PUT", operation.Path, operation.Contents)
+	request.ContentLength = int64(operation.Length)
+	if len(operation.MD5) > 0 {
+		request.Header.Set("Content-MD5", hex.EncodeToString(operation.MD5))
+	}
+	if _, err := this.executeRequest(request); err != nil {
+		return PutResponse{Path: operation.Path, Error: err}
+	} else {
+		return PutResponse{Path: operation.Path, Error: nil}
+	}
 }
 func (this *S3Remote) List(operation ListRequest) ListResponse {
 	// create a request (construct the URL)
 	// sign the request
 	// issue the request with appropriate timeouts, etc.
-	// enumerate the results on S3
+	// ***enumerate the results on S3 until we've gathered everything***
 	// return the response
 	return ListResponse{}
 }
 func (this *S3Remote) Delete(operation DeleteRequest) DeleteResponse {
-	return DeleteResponse{}
+	request := this.newRequest("DELETE", operation.Path, nil)
+	if _, err := this.executeRequest(request); err != nil {
+		return DeleteResponse{Path: operation.Path, Error: err}
+	} else {
+		return DeleteResponse{Path: operation.Path, Error: nil}
+	}
 }
-func (this *S3Remote) composeURL(file string) string {
-	return "https://" + this.hostname + path.Join("/", this.bucketName, this.pathPrefix, file)
+
+func (this *S3Remote) newRequest(method, requestPath string, body io.Reader) *http.Request {
+	url := "https://" + this.hostname + path.Join("/", this.bucketName, this.pathPrefix, requestPath)
+	request, _ := http.NewRequest(method, url, body)
+	return request
 }
 func (this *S3Remote) executeRequest(request *http.Request) (*http.Response, error) {
-	// TODO: connection pooling? HTTP and TCP keep alive?
-	// SSL negotiation? HTTP request pipelining???
-	// TCP connection timeouts, SSL handshake timeouts
-	// follow redirects policy should re-sign redirects if they are for s3 resources
 	awsauth.Sign(request, this.credentials)
-	client := http.Client{}
-	return client.Do(request)
+	response, err := this.client.Do(request)
+	err = parseError(err, response.StatusCode)
+	return response, err
 }
 func parseMD5(encoded string) []byte {
 	if len(encoded) > 1 && strings.HasPrefix(encoded, `"`) {
@@ -117,4 +143,19 @@ func parseDate(date string) time.Time {
 func parseLength(length string) uint64 {
 	parsed, _ := strconv.ParseUint(length, 10, 64)
 	return parsed
+}
+func parseError(err error, statusCode int) error {
+	if err != nil {
+		return RemoteUnavailableError // error caused by tcp issues, http protocol problems, or redirect policy
+	} else if statusCode == http.StatusOK {
+		return nil
+	} else if statusCode == http.StatusNotFound { // 404
+		return FileNotFoundError
+	} else if statusCode == http.StatusUnauthorized { // 403
+		return AccessDeniedError
+	} else if statusCode == http.StatusBadRequest { // 400
+		return ContentIntegrityError
+	} else {
+		return RemoteUnavailableError
+	}
 }
