@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+type ReadSeekCloser interface {
+	io.Reader
+	io.Seeker
+	io.Closer
+}
+
 type (
 	GetRequest struct {
 		Path        string
@@ -20,13 +26,12 @@ type (
 	// 4. permissions
 	// 5. remote/backend unavailable
 	GetResponse struct {
-		Path        string // from the request
-		MD5         []byte
-		ExpectedMD5 []byte // from the request
-		Created     time.Time
-		Length      uint64
-		Contents    io.ReadSeekCloser // we need to be able to read the entire stream multiple times
-		Error       error             // contains not found errors, backend unavailable, etc.
+		Path     string // from the request
+		MD5      []byte
+		Created  time.Time
+		Length   uint64
+		Contents ReadSeekCloser // we need to be able to read the entire stream multiple times
+		Error    error          // contains not found errors, backend unavailable, etc.
 	}
 )
 
@@ -37,22 +42,21 @@ type (
 	}
 
 	HeadResponse struct {
-		Path        string // from the request
-		MD5         []byte
-		ExpectedMD5 []byte // from the request
-		Created     time.Time
-		Length      uint64
-		Error       error
+		Path    string // from the request
+		MD5     []byte
+		Created time.Time
+		Length  uint64
+		Error   error
 	}
 )
 
 type (
 	PutRequest struct {
-		Path        string            // from the request
-		MD5         []byte            // empty if we don't care
-		ExpectedMD5 []byte            // empty if we don't care
-		Contents    io.ReadSeekCloser // we need to be able to read the entire stream multiple times
-		Length      uint64            // for streaming large file from filesystem; []byte can be wrapped in a buffer
+		Path        string         // from the request
+		MD5         []byte         // empty if we don't care
+		ExpectedMD5 []byte         // empty if we don't care
+		Contents    ReadSeekCloser // we need to be able to read the entire stream multiple times
+		Length      uint64         // for streaming large file from filesystem; []byte can be wrapped in a buffer
 		Concurrency int
 	}
 
