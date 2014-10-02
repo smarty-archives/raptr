@@ -71,3 +71,95 @@ and then gets the various Sources|Releases files and parses and understands them
 and we can use those to add/remove packages/files to them
 (and perhaps they can verify the integrity of the deb|dsc) files that are added?
 (perhaps a Distribution instance can verify the integrity of the added files?)
+
+
+
+
+sample raptr configuration file:
+{
+	"layouts":{
+		"named-layout-1":{
+			"distributions":[ "production", "staging", "testing" ],
+			"categories":[ "liveaddress", "operations", "accounting", "public" ],
+			"architectures":[ "amd64", "i386", "source" ]
+		},
+    "named-layout-2":{
+      "distributions":[ "all" ],
+      "categories":[ "main" ],
+      "architectures":[ "amd64", "i386" ]
+    }
+	},
+	"s3":{
+		"replica-1":{ "region":"us-east-1", "bucket":"replica-1", "layout":"named-layout-1" },
+		"replica-2":{ "region":"us-west-1", "bucket":"replica-2", "layout":"named-layout-1" },
+		"replica-3":{ "region":"us-west-2", "bucket":"replica-3", "layout":"named-layout-1" }
+	},
+  "filesystem":{
+    "local-01":{ "path":"/local/directory","layout":"named-layout-2" }
+  },
+  "azure":{}
+  "google":{}
+}
+
+
+// config file search paths: current working directory, location of raptr executable?,
+// ~/.ratpr, and finally /etc/raptr.conf,
+
+by utilizing the above configuration file, we know exactly how each repository is stuctured
+without any guessing or scanning. this means that at startup, we can easily retrieve the exact
+manifest files necessary for the action at hand
+
+deb|dsc files with ignored architectures according to the configuration file will be
+display an explicit warning during the upload phase:
+"[WARNING] Skipping ignored architecture some-file_1.0.7_arm64.deb"
+
+We still have the consideration of whether to upload metadata alongside the uploaded files
+If we do upload the metadata, we can then call upload distinct from link, but it requires
+us to potentially (but *optionally*) issue two commands and also has the effect of a
+non-standard file in the repo that we would need to parse and keep up to date
+if additional package files were added to that particular version, we would need to download
+it, parse it, and upload it.
+
+BUT this manifest could be a good thing because it does tell me about the files
+without me needing to download/parse/interpet any of the Sources or Packages files
+which can be especially handy in this scenario:
+
+1. pkg_version already exists and is linked to testing
+2. someone else decides to upload pkg_version linked to staging (without looking at testing)
+
+In the above scenario, we've got a problem. If we overwrite pkg_version files, that invalidates
+"testing" because the hashes are different. If we don't overwrite, then we can't link to staging
+because...the hashes might be different. Short of downloading all Packages and Sources file
+for every single upload operation (which might get big), we probably need a manifest file
+in each pool directory for a given bundle.
+
+if we decided to use event sourcing, everything would hinge on the events.json file for the repo
+(which creates lock contention, but that's exactly what we want). we would probably need
+to maintain almost the exact same CLI. but we essentially download and re-upload the
+json events every single time...and perform concurrency checks on it. while the
+file is compressed, it could get big. but it does tell us everything we need to know
+with events, we'd know exactly which distributions, categories, and architectures are supported
+within a given repo.
+
+solutions:
+1. upload a metadata/manifest file probably in JSON? which includes the requisite metadata
+   from the various packages that way we know exactly what packages exist and all
+   their relevant information
+2. when linking that package to a distribution, we retrieve and parse the manifest
+   and use it to build the Sources and Packages files
+
+Partial/failed uploads of DSC|.orig|.debian.tar.gz?
+
+Thought: Once a manifest file exists, all package files@version is complete and cannot be
+appended to? That's the easiest answer for now. OR any files full package@version not
+in the manifest can be uploaded. This allows us to add additional architectures at
+a later date.
+
+1. manifest contains amd64+sources @ 1.0.7 (and all corresponding files are there)
+2. raptr wants to upload i386 @ 1.0.7 and i386 doesn't exist, therefore:
+   a) upload all i386-related debs
+   b) update manifest once debs are uploaded
+
+if manifest fails uploads, the i386 debs are orphans and can be overwritten
+
+How to get this under test?
