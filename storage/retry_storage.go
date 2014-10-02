@@ -1,7 +1,7 @@
 package storage
 
-// Watches for connection- and mismatch- errors (remote/backend unavailable) and retries the
-// operation a configured number of times.
+// Watches for connection- and mismatch-related errors and retries the
+// operation up to a configured number of times.
 type RetryStorage struct {
 	inner      Storage
 	maxRetries int
