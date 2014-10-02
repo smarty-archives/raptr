@@ -21,7 +21,8 @@ func NewIntegrityRemote(inner Remote) *IntegrityRemote {
 func (this *IntegrityRemote) Get(request GetRequest) GetResponse {
 	if response := this.inner.Get(request); response.Error != nil {
 		return response
-	} else if passedIntegrityCheck(request.ExpectedMD5, response.MD5, response.Contents) {
+	} else if hash, matched := passedIntegrityCheck(request.ExpectedMD5, response.MD5, response.Contents); matched {
+		response.MD5 = hash
 		return response
 	} else {
 		return GetResponse{Path: request.Path, Error: ContentIntegrityError}
@@ -30,42 +31,57 @@ func (this *IntegrityRemote) Get(request GetRequest) GetResponse {
 func (this *IntegrityRemote) Head(request HeadRequest) HeadResponse {
 	if response := this.inner.Head(request); response.Error != nil {
 		return response
-	} else if passedIntegrityCheck(request.ExpectedMD5, response.MD5, nil) {
+	} else if hash, matched := passedIntegrityCheck(request.ExpectedMD5, response.MD5, nil); matched {
+		response.MD5 = hash
 		return response
 	} else {
 		return HeadResponse{Path: request.Path, Error: ContentIntegrityError}
 	}
 }
-func passedIntegrityCheck(expected, actual []byte, contents io.ReadSeeker) bool {
+func passedIntegrityCheck(expected, actual []byte, contents io.ReadSeeker) ([]byte, bool) {
 	if len(expected) > 0 && len(actual) > 0 && bytes.Compare(expected, actual) != 0 {
-		return false
+		return []byte{}, false
 	} else if !contentsMatch(expected, contents) {
-		return false
+		return []byte{}, false
 	} else if !contentsMatch(actual, contents) {
-		return false
+		return []byte{}, false
+	} else if len(expected) > 0 {
+		return expected, true // expected exists and matches
+	} else if len(actual) > 0 {
+		return actual, true // actual exists and matches
 	} else {
-		return true
+		return computeHash(contents), true // no actual or expected hash to compare agains
 	}
 }
-func contentsMatch(hash []byte, contents io.ReadSeeker) bool {
-	if contents == nil {
-		return true // no contents
-	} else if len(hash) == 0 {
-		return true // no hash
-	} else if _, err := contents.Seek(0, 0); err != nil {
-		return false // unable to seek
-	} else if payload, err := ioutil.ReadAll(contents); err != nil {
-		return false // unable to read payload
-	} else if bytes.Compare(md5.New().Sum(payload)[:], hash) != 0 {
-		return false // md5 doesn't match
-	} else if _, err := contents.Seek(0, 0); err != nil {
-		return false // unable to rewind the stream again
-	} else {
+func contentsMatch(proposed []byte, contents io.ReadSeeker) bool {
+	if len(proposed) == 0 {
 		return true
+	} else if bytes.Compare(proposed, computeHash(contents)) == 0 {
+		return true
+	} else {
+		return false
+	}
+}
+func computeHash(contents io.ReadSeeker) []byte {
+	if contents == nil {
+		return []byte{}
+	} else if _, err := contents.Seek(0, 0); err != nil {
+		return []byte{} // unable to seek to beginning
+	} else if payload, err := ioutil.ReadAll(contents); err != nil {
+		return []byte{} // unable to read payload
+	} else if len(payload) == 0 {
+		return []byte{} // empty payload
+	} else if computed := md5.New().Sum(payload)[:]; len(computed) == 0 {
+		return []byte{} // unable to hash
+	} else if _, err := contents.Seek(0, 0); err != nil {
+		return []byte{} // unable to rewind the stream again
+	} else {
+		return computed
 	}
 }
 
 func (this *IntegrityRemote) Put(request PutRequest) PutResponse {
+	// TODO: if no md5 on put, calculate one
 	return this.inner.Put(request)
 }
 func (this *IntegrityRemote) List(request ListRequest) ListResponse {
