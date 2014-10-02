@@ -1,4 +1,4 @@
-package main
+package remotes
 
 type Remote interface {
 	Put(PutRequest) PutResponse

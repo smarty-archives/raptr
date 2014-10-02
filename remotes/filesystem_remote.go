@@ -1,4 +1,4 @@
-package main
+package remotes
 
 // Enables a locally configured file system directory to serve as a remote.
 type FilesystemRemote struct{}

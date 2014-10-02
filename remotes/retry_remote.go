@@ -1,4 +1,4 @@
-package main
+package remotes
 
 // Watches for connection- and mismatch- errors (remote/backend unavailable) and retries the
 // operation a configured number of times.

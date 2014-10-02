@@ -1,4 +1,4 @@
-package main
+package remotes
 
 // FUTURE
 // Provides the ability to utilize a local/fast backend as well as a remote/slow backend.
