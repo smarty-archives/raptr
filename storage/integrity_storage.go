@@ -1,4 +1,4 @@
-package remotes
+package storage
 
 import (
 	"bytes"
@@ -10,15 +10,15 @@ import (
 // Ensures the integrity of all files retrieved from the remote
 // by comparing the actual MD5 (if any) vs the desired or expected MD5 (if any)
 // and by comparing the Contents vs the actual or expected MD5 (whichever is populated)
-type IntegrityRemote struct {
-	inner Remote
+type IntegrityStorage struct {
+	inner Storage
 }
 
-func NewIntegrityRemote(inner Remote) *IntegrityRemote {
-	return &IntegrityRemote{inner: inner}
+func NewIntegrityStorage(inner Storage) *IntegrityStorage {
+	return &IntegrityStorage{inner: inner}
 }
 
-func (this *IntegrityRemote) Get(request GetRequest) GetResponse {
+func (this *IntegrityStorage) Get(request GetRequest) GetResponse {
 	if response := this.inner.Get(request); response.Error != nil {
 		return response
 	} else if hash, matched := passedIntegrityCheck(request.ExpectedMD5, response.MD5, response.Contents); matched {
@@ -28,7 +28,7 @@ func (this *IntegrityRemote) Get(request GetRequest) GetResponse {
 		return GetResponse{Path: request.Path, Error: ContentIntegrityError}
 	}
 }
-func (this *IntegrityRemote) Head(request HeadRequest) HeadResponse {
+func (this *IntegrityStorage) Head(request HeadRequest) HeadResponse {
 	if response := this.inner.Head(request); response.Error != nil {
 		return response
 	} else if hash, matched := passedIntegrityCheck(request.ExpectedMD5, response.MD5, nil); matched {
@@ -80,16 +80,16 @@ func computeHash(contents io.ReadSeeker) []byte {
 	}
 }
 
-func (this *IntegrityRemote) Put(request PutRequest) PutResponse {
+func (this *IntegrityStorage) Put(request PutRequest) PutResponse {
 	if len(request.MD5) == 0 {
 		request.MD5 = computeHash(request.Contents)
 	}
 
 	return this.inner.Put(request)
 }
-func (this *IntegrityRemote) List(request ListRequest) ListResponse {
+func (this *IntegrityStorage) List(request ListRequest) ListResponse {
 	return this.inner.List(request)
 }
-func (this *IntegrityRemote) Delete(request DeleteRequest) DeleteResponse {
+func (this *IntegrityStorage) Delete(request DeleteRequest) DeleteResponse {
 	return this.inner.Delete(request)
 }

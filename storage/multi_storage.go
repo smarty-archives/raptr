@@ -1,4 +1,4 @@
-package remotes
+package storage
 
 import "sync"
 
@@ -8,15 +8,15 @@ import "sync"
 // first response, the second to the second, and so forth. Furthermore,
 // each set parallel operations will block until all desired operations have
 // completed.
-type ParallelRemote struct {
-	inner Remote
+type ParallelStorage struct {
+	inner Storage
 }
 
-func NewParallelRemote(inner Remote) *ParallelRemote {
-	return &ParallelRemote{inner: inner}
+func NewParallelStorage(inner Storage) *ParallelStorage {
+	return &ParallelStorage{inner: inner}
 }
 
-func (this *ParallelRemote) Put(requests ...PutRequest) []PutResponse {
+func (this *ParallelStorage) Put(requests ...PutRequest) []PutResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]PutResponse, len(requests))
@@ -31,7 +31,7 @@ func (this *ParallelRemote) Put(requests ...PutRequest) []PutResponse {
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelRemote) Get(requests ...GetRequest) []GetResponse {
+func (this *ParallelStorage) Get(requests ...GetRequest) []GetResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]GetResponse, len(requests))
@@ -46,7 +46,7 @@ func (this *ParallelRemote) Get(requests ...GetRequest) []GetResponse {
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelRemote) Delete(requests ...DeleteRequest) []DeleteResponse {
+func (this *ParallelStorage) Delete(requests ...DeleteRequest) []DeleteResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]DeleteResponse, len(requests))
@@ -61,7 +61,7 @@ func (this *ParallelRemote) Delete(requests ...DeleteRequest) []DeleteResponse {
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelRemote) Head(requests ...HeadRequest) []HeadResponse {
+func (this *ParallelStorage) Head(requests ...HeadRequest) []HeadResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]HeadResponse, len(requests))
@@ -76,7 +76,7 @@ func (this *ParallelRemote) Head(requests ...HeadRequest) []HeadResponse {
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelRemote) List(requests ...ListRequest) []ListResponse {
+func (this *ParallelStorage) List(requests ...ListRequest) []ListResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]ListResponse, len(requests))

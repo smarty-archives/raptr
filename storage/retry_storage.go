@@ -1,17 +1,17 @@
-package remotes
+package storage
 
 // Watches for connection- and mismatch- errors (remote/backend unavailable) and retries the
 // operation a configured number of times.
-type RetryRemote struct {
-	inner      Remote
+type RetryStorage struct {
+	inner      Storage
 	maxRetries int
 }
 
-func NewRetryRemote(inner Remote, maxRetries int) *RetryRemote {
-	return &RetryRemote{inner: inner, maxRetries: maxRetries}
+func NewRetryStorage(inner Storage, maxRetries int) *RetryStorage {
+	return &RetryStorage{inner: inner, maxRetries: maxRetries}
 }
 
-func (this *RetryRemote) Put(request PutRequest) PutResponse {
+func (this *RetryStorage) Put(request PutRequest) PutResponse {
 	for attempt := 0; ; attempt++ {
 		response := this.inner.Put(request)
 		if !this.canRetry(response.Error, attempt) {
@@ -19,7 +19,7 @@ func (this *RetryRemote) Put(request PutRequest) PutResponse {
 		}
 	}
 }
-func (this *RetryRemote) Get(request GetRequest) GetResponse {
+func (this *RetryStorage) Get(request GetRequest) GetResponse {
 	for attempt := 0; ; attempt++ {
 		response := this.inner.Get(request)
 		if !this.canRetry(response.Error, attempt) {
@@ -27,7 +27,7 @@ func (this *RetryRemote) Get(request GetRequest) GetResponse {
 		}
 	}
 }
-func (this *RetryRemote) List(request ListRequest) ListResponse {
+func (this *RetryStorage) List(request ListRequest) ListResponse {
 	for attempt := 0; ; attempt++ {
 		response := this.inner.List(request)
 		if !this.canRetry(response.Error, attempt) {
@@ -35,7 +35,7 @@ func (this *RetryRemote) List(request ListRequest) ListResponse {
 		}
 	}
 }
-func (this *RetryRemote) Head(request HeadRequest) HeadResponse {
+func (this *RetryStorage) Head(request HeadRequest) HeadResponse {
 	for attempt := 0; ; attempt++ {
 		response := this.inner.Head(request)
 		if !this.canRetry(response.Error, attempt) {
@@ -43,7 +43,7 @@ func (this *RetryRemote) Head(request HeadRequest) HeadResponse {
 		}
 	}
 }
-func (this *RetryRemote) Delete(request DeleteRequest) DeleteResponse {
+func (this *RetryStorage) Delete(request DeleteRequest) DeleteResponse {
 	for attempt := 0; ; attempt++ {
 		response := this.inner.Delete(request)
 		if !this.canRetry(response.Error, attempt) {
@@ -51,12 +51,12 @@ func (this *RetryRemote) Delete(request DeleteRequest) DeleteResponse {
 		}
 	}
 }
-func (this *RetryRemote) canRetry(err error, attempt int) bool {
+func (this *RetryStorage) canRetry(err error, attempt int) bool {
 	if attempt >= this.maxRetries {
 		return false // too many attempts
 	} else if err == ContentIntegrityError {
 		return true // hash doesn't match actutal contents, retry
-	} else if err == RemoteUnavailableError {
+	} else if err == StorageUnavailableError {
 		return true // remote system having problems, retry
 	}
 

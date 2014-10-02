@@ -1,4 +1,4 @@
-package remotes
+package storage
 
 import (
 	"encoding/hex"
@@ -12,7 +12,7 @@ import (
 )
 import "github.com/smartystreets/go-aws-auth"
 
-type S3Remote struct {
+type S3Storage struct {
 	hostname    string
 	bucketName  string
 	pathPrefix  string
@@ -20,8 +20,8 @@ type S3Remote struct {
 	client      *http.Client
 }
 
-func NewS3Remote(regionName, bucketName, pathPrefix, accessKey, secretKey string) *S3Remote {
-	return &S3Remote{
+func NewS3Storage(regionName, bucketName, pathPrefix, accessKey, secretKey string) *S3Storage {
+	return &S3Storage{
 		hostname:    resolveHostname(regionName) + ".amazonaws.com",
 		bucketName:  bucketName,
 		pathPrefix:  pathPrefix,
@@ -64,7 +64,7 @@ func buildClient() *http.Client {
 	return &http.Client{}
 }
 
-func (this *S3Remote) Head(operation HeadRequest) HeadResponse {
+func (this *S3Storage) Head(operation HeadRequest) HeadResponse {
 	request := this.newRequest("HEAD", operation.Path, nil)
 	if response, err := this.executeRequest(request); err != nil {
 		return HeadResponse{Path: operation.Path, Error: err}
@@ -78,13 +78,13 @@ func (this *S3Remote) Head(operation HeadRequest) HeadResponse {
 		}
 	}
 }
-func (this *S3Remote) Get(operation GetRequest) GetResponse {
+func (this *S3Storage) Get(operation GetRequest) GetResponse {
 	request := this.newRequest("GET", operation.Path, nil)
 	if response, err := this.executeRequest(request); err != nil {
 		return GetResponse{Path: operation.Path, Error: err}
 	} else if payload, err := ioutil.ReadAll(response.Body); err != nil {
 		response.Body.Close()
-		return GetResponse{Path: operation.Path, Error: RemoteUnavailableError}
+		return GetResponse{Path: operation.Path, Error: StorageUnavailableError}
 	} else {
 		header := response.Header
 		return GetResponse{
@@ -97,7 +97,7 @@ func (this *S3Remote) Get(operation GetRequest) GetResponse {
 	}
 }
 
-func (this *S3Remote) Put(operation PutRequest) PutResponse {
+func (this *S3Storage) Put(operation PutRequest) PutResponse {
 	request := this.newRequest("PUT", operation.Path, operation.Contents)
 	request.ContentLength = int64(operation.Length)
 	request.Header.Set("Content-Type", "binary/octet-stream")
@@ -108,22 +108,22 @@ func (this *S3Remote) Put(operation PutRequest) PutResponse {
 	_, err := this.executeRequest(request)
 	return PutResponse{Path: operation.Path, Error: err}
 }
-func (this *S3Remote) List(operation ListRequest) ListResponse {
+func (this *S3Storage) List(operation ListRequest) ListResponse {
 	// this will be at least one request until we've gathered everything locally
 	panic("Not implemented")
 }
-func (this *S3Remote) Delete(operation DeleteRequest) DeleteResponse {
+func (this *S3Storage) Delete(operation DeleteRequest) DeleteResponse {
 	request := this.newRequest("DELETE", operation.Path, nil)
 	_, err := this.executeRequest(request)
 	return DeleteResponse{Path: operation.Path, Error: err}
 }
 
-func (this *S3Remote) newRequest(method, requestPath string, body io.Reader) *http.Request {
+func (this *S3Storage) newRequest(method, requestPath string, body io.Reader) *http.Request {
 	url := "https://" + this.hostname + path.Join("/", this.bucketName, this.pathPrefix, requestPath)
 	request, _ := http.NewRequest(method, url, body)
 	return request
 }
-func (this *S3Remote) executeRequest(request *http.Request) (*http.Response, error) {
+func (this *S3Storage) executeRequest(request *http.Request) (*http.Response, error) {
 	awsauth.Sign(request, this.credentials)
 	response, err := this.client.Do(request)
 	err = parseError(err, response.StatusCode)
@@ -147,7 +147,7 @@ func parseLength(length string) uint64 {
 }
 func parseError(err error, statusCode int) error {
 	if err != nil {
-		return RemoteUnavailableError // error caused by tcp issues, http protocol problems, or redirect policy
+		return StorageUnavailableError // error caused by tcp issues, http protocol problems, or redirect policy
 	} else if statusCode == http.StatusOK {
 		return nil
 	} else if statusCode == http.StatusNotFound { // 404
@@ -157,6 +157,6 @@ func parseError(err error, statusCode int) error {
 	} else if statusCode == http.StatusBadRequest { // 400
 		return ContentIntegrityError
 	} else {
-		return RemoteUnavailableError
+		return StorageUnavailableError
 	}
 }

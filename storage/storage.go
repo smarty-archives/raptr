@@ -1,6 +1,6 @@
-package remotes
+package storage
 
-type Remote interface {
+type Storage interface {
 	Put(PutRequest) PutResponse
 	Get(GetRequest) GetResponse
 	Delete(DeleteRequest) DeleteResponse

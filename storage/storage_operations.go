@@ -1,4 +1,4 @@
-package remotes
+package storage
 
 import (
 	"errors"
@@ -102,11 +102,11 @@ type (
 )
 
 var (
-	ConcurrencyError       = errors.New("The remote file is different from what was expected.")
-	ContentIntegrityError  = errors.New("The contents of the file do not match the expected hash.")
-	RemoteUnavailableError = errors.New("The remote system is unavailable or not responding.")
-	AccessDeniedError      = os.ErrPermission
-	FileNotFoundError      = os.ErrNotExist
+	ConcurrencyError        = errors.New("The remote file is different from what was expected.")
+	ContentIntegrityError   = errors.New("The contents of the file do not match the expected hash.")
+	StorageUnavailableError = errors.New("The remote system is unavailable or not responding.")
+	AccessDeniedError       = os.ErrPermission
+	FileNotFoundError       = os.ErrNotExist
 )
 
 const (
