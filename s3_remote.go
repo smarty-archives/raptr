@@ -82,15 +82,15 @@ func (this *S3Remote) Get(operation GetRequest) GetResponse {
 	// create a request (construct the URL)
 	// sign the request
 	// issue the request with appropriate timeouts, etc.
-	// ***ensure the content integrity is okay***
 	// return the response
 	return GetResponse{}
 }
 
 func (this *S3Remote) Put(operation PutRequest) PutResponse {
-	// TODO: consider operation.Overwrite modes
 	request := this.newRequest("PUT", operation.Path, operation.Contents)
 	request.ContentLength = int64(operation.Length)
+	request.Header.Set("Content-Type", "binary/octet-stream")
+	request.Header.Set("Content-Disposition", "attachment")
 	if len(operation.MD5) > 0 {
 		request.Header.Set("Content-MD5", hex.EncodeToString(operation.MD5))
 	}

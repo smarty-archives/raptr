@@ -9,8 +9,8 @@ import (
 
 type (
 	GetRequest struct {
-		Path string
-		// ExpectedMD5 []byte // empty if we don't care
+		Path        string
+		ExpectedMD5 []byte // empty if we don't care
 	}
 
 	// errors resulting from download:
@@ -20,38 +20,40 @@ type (
 	// 4. permissions
 	// 5. remote/backend unavailable
 	GetResponse struct {
-		Path     string
-		MD5      []byte
-		Created  time.Time
-		Length   uint64
-		Contents io.ReadSeeker // we need to be able to read the entire stream multiple times
-		Error    error         // contains not found errors, backend unavailable, etc.
+		Path        string // from the request
+		MD5         []byte
+		ExpectedMD5 []byte // from the request
+		Created     time.Time
+		Length      uint64
+		Contents    io.ReadSeekCloser // we need to be able to read the entire stream multiple times
+		Error       error             // contains not found errors, backend unavailable, etc.
 	}
 )
 
 type (
 	HeadRequest struct {
-		Path string
+		Path        string
+		ExpectedMD5 []byte // empty if we don't care
 	}
 
 	HeadResponse struct {
-		Path    string
-		MD5     []byte
-		Created time.Time
-		Length  uint64
-		Error   error
+		Path        string // from the request
+		MD5         []byte
+		ExpectedMD5 []byte // from the request
+		Created     time.Time
+		Length      uint64
+		Error       error
 	}
 )
 
 type (
 	PutRequest struct {
-		Path        string
-		MD5         []byte        // empty if we don't care
-		ExpectedMD5 []byte        // empty if we don't care
-		Contents    io.ReadSeeker // we need to be able to read the entire stream multiple times
-		Length      uint64        // for streaming large file from filesystem; []byte can be wrapped in a buffer
+		Path        string            // from the request
+		MD5         []byte            // empty if we don't care
+		ExpectedMD5 []byte            // empty if we don't care
+		Contents    io.ReadSeekCloser // we need to be able to read the entire stream multiple times
+		Length      uint64            // for streaming large file from filesystem; []byte can be wrapped in a buffer
 		Concurrency int
-		Overwrite   int
 	}
 
 	// errors resulting from upload:
@@ -61,18 +63,18 @@ type (
 	// 4. permissions
 	// 5. remote/backend unavailable
 	PutResponse struct {
-		Path  string
+		Path  string // from the request
 		Error error
 	}
 )
 
 type (
 	DeleteRequest struct {
-		Path string
+		Path string // from the request
 	}
 
 	DeleteResponse struct {
-		Path  string
+		Path  string // from the request
 		Error error
 	}
 )
@@ -83,7 +85,7 @@ type (
 	}
 
 	ListResponse struct {
-		Path  string
+		Path  string // from the request
 		Items []ListItem
 		Error error
 	}
@@ -107,10 +109,4 @@ const (
 	ChaosConcurrency = 0
 	CheckBeforePut   = 1 << iota
 	CheckAfterPut    = 1 << iota
-)
-
-const (
-	OverwriteAlways = iota
-	OverwriteNever
-	OverwriteIfDifferentContents
 )
