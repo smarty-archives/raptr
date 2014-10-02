@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"path"
 	"strconv"
@@ -74,16 +75,26 @@ func (this *S3Remote) Head(operation HeadRequest) HeadResponse {
 			MD5:     parseMD5(header.Get("ETag")),
 			Created: parseDate(header.Get("Last-Modified")),
 			Length:  parseLength(header.Get("Content-Length")),
-			Error:   nil,
 		}
 	}
 }
 func (this *S3Remote) Get(operation GetRequest) GetResponse {
-	// create a request (construct the URL)
-	// sign the request
-	// issue the request with appropriate timeouts, etc.
-	// return the response
-	return GetResponse{}
+	request := this.newRequest("GET", operation.Path, nil)
+	if response, err := this.executeRequest(request); err != nil {
+		return GetResponse{Path: operation.Path, Error: err}
+	} else if payload, err := ioutil.ReadAll(response.Body); err != nil {
+		response.Body.Close()
+		return GetResponse{Path: operation.Path, Error: RemoteUnavailableError}
+	} else {
+		header := response.Header
+		return GetResponse{
+			Path:     operation.Path,
+			MD5:      parseMD5(header.Get("ETag")),
+			Created:  parseDate(header.Get("Last-Modified")),
+			Length:   parseLength(header.Get("Content-Length")),
+			Contents: NewReader(payload),
+		}
+	}
 }
 
 func (this *S3Remote) Put(operation PutRequest) PutResponse {
