@@ -2,21 +2,19 @@ package storage
 
 import "sync"
 
-// Takes a set of operations and performs them in parallel such that each
-// operation happens side by side. The result slice from each operation will
-// be returned in the same order, e.g. the first request correlates to the
-// first response, the second to the second, and so forth. Furthermore,
-// each set parallel operations will block until all desired operations have
-// completed.
-type ParallelStorage struct {
+// Takes a set of operations and performs them simultaneously. The resulting
+// slice from each operation will be returned in the same order as the request
+// slice. Furthermore, each set of operations will block until all desired
+// operations have completed.
+type MultiStorage struct {
 	inner Storage
 }
 
-func NewParallelStorage(inner Storage) *ParallelStorage {
-	return &ParallelStorage{inner: inner}
+func NewMultiStorage(inner Storage) *MultiStorage {
+	return &MultiStorage{inner: inner}
 }
 
-func (this *ParallelStorage) Put(requests ...PutRequest) []PutResponse {
+func (this *MultiStorage) Put(requests ...PutRequest) []PutResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]PutResponse, len(requests))
@@ -31,7 +29,7 @@ func (this *ParallelStorage) Put(requests ...PutRequest) []PutResponse {
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelStorage) Get(requests ...GetRequest) []GetResponse {
+func (this *MultiStorage) Get(requests ...GetRequest) []GetResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]GetResponse, len(requests))
@@ -46,7 +44,7 @@ func (this *ParallelStorage) Get(requests ...GetRequest) []GetResponse {
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelStorage) Delete(requests ...DeleteRequest) []DeleteResponse {
+func (this *MultiStorage) Delete(requests ...DeleteRequest) []DeleteResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]DeleteResponse, len(requests))
@@ -61,7 +59,7 @@ func (this *ParallelStorage) Delete(requests ...DeleteRequest) []DeleteResponse 
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelStorage) Head(requests ...HeadRequest) []HeadResponse {
+func (this *MultiStorage) Head(requests ...HeadRequest) []HeadResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]HeadResponse, len(requests))
@@ -76,7 +74,7 @@ func (this *ParallelStorage) Head(requests ...HeadRequest) []HeadResponse {
 	waiter.Wait()
 	return responses
 }
-func (this *ParallelStorage) List(requests ...ListRequest) []ListResponse {
+func (this *MultiStorage) List(requests ...ListRequest) []ListResponse {
 	var waiter sync.WaitGroup
 	waiter.Add(len(requests))
 	responses := make([]ListResponse, len(requests))
