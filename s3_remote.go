@@ -109,12 +109,8 @@ func (this *S3Remote) Put(operation PutRequest) PutResponse {
 	return PutResponse{Path: operation.Path, Error: err}
 }
 func (this *S3Remote) List(operation ListRequest) ListResponse {
-	// create a request (construct the URL)
-	// sign the request
-	// issue the request with appropriate timeouts, etc.
-	// ***enumerate the results on S3 until we've gathered everything***
-	// return the response
-	return ListResponse{}
+	// this will be at least one request until we've gathered everything locally
+	panic("Not implemented")
 }
 func (this *S3Remote) Delete(operation DeleteRequest) DeleteResponse {
 	request := this.newRequest("DELETE", operation.Path, nil)
