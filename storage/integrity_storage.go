@@ -40,21 +40,23 @@ func (this *IntegrityStorage) Head(request HeadRequest) HeadResponse {
 }
 func passedIntegrityCheck(expected, actual []byte, contents io.ReadSeeker) ([]byte, bool) {
 	if len(expected) > 0 && len(actual) > 0 && bytes.Compare(expected, actual) != 0 {
-		return []byte{}, false
+		return []byte{}, false // expected and actual hashes don't match
 	} else if !contentsMatch(expected, contents) {
-		return []byte{}, false
+		return []byte{}, false // expected (if it exists), doesn't match the contents
 	} else if !contentsMatch(actual, contents) {
-		return []byte{}, false
+		return []byte{}, false // actual (if it exists), doesn't match the contents
 	} else if len(expected) > 0 {
-		return expected, true // expected exists and matches
+		return expected, true // expected exists and matches the contents
 	} else if len(actual) > 0 {
-		return actual, true // actual exists and matches
+		return actual, true // actual exists and matches the contents
 	} else {
-		return computeHash(contents), true // no actual or expected hash to compare agains
+		return computeHash(contents), true // no actual or expected hash to compare against
 	}
 }
 func contentsMatch(proposed []byte, contents io.ReadSeeker) bool {
-	if len(proposed) == 0 {
+	if contents == nil {
+		return true
+	} else if len(proposed) == 0 {
 		return true
 	} else if bytes.Compare(proposed, computeHash(contents)) == 0 {
 		return true
@@ -71,12 +73,12 @@ func computeHash(contents io.ReadSeeker) []byte {
 		return []byte{} // unable to read payload
 	} else if len(payload) == 0 {
 		return []byte{} // empty payload
-	} else if computed := md5.New().Sum(payload)[:]; len(computed) == 0 {
+	} else if computed := md5.Sum(payload); len(computed) == 0 {
 		return []byte{} // unable to hash
 	} else if _, err := contents.Seek(0, 0); err != nil {
 		return []byte{} // unable to rewind the stream again
 	} else {
-		return computed
+		return computed[:]
 	}
 }
 

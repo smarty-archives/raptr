@@ -150,12 +150,14 @@ func parseError(err error, statusCode int) error {
 		return StorageUnavailableError // error caused by tcp issues, http protocol problems, or redirect policy
 	} else if statusCode == http.StatusOK {
 		return nil
-	} else if statusCode == http.StatusNotFound { // 404
-		return FileNotFoundError
-	} else if statusCode == http.StatusUnauthorized { // 403
-		return AccessDeniedError
 	} else if statusCode == http.StatusBadRequest { // 400
 		return ContentIntegrityError
+	} else if statusCode == http.StatusUnauthorized { // 401
+		return AccessDeniedError
+	} else if statusCode == http.StatusForbidden { // 403
+		return AccessDeniedError
+	} else if statusCode == http.StatusNotFound { // 404
+		return FileNotFoundError
 	} else {
 		return StorageUnavailableError
 	}
