@@ -81,7 +81,10 @@ func computeHash(contents io.ReadSeeker) []byte {
 }
 
 func (this *IntegrityRemote) Put(request PutRequest) PutResponse {
-	// TODO: if no md5 on put, calculate one
+	if len(request.MD5) == 0 {
+		request.MD5 = computeHash(request.Contents)
+	}
+
 	return this.inner.Put(request)
 }
 func (this *IntegrityRemote) List(request ListRequest) ListResponse {
