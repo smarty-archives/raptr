@@ -1,7 +1,9 @@
 package remotes
 
 // Enables a locally configured file system directory to serve as a remote.
-type FilesystemRemote struct{}
+type FilesystemRemote struct {
+	filenameAppendMD5 bool
+}
 
 func NewFilesystemRemote(fast, slow Remote) *FilesystemRemote {
 	return &FilesystemRemote{}
