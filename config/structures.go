@@ -31,3 +31,10 @@ type RepositoryInfo struct {
 	Storage    storage.Storage
 	Layout     LayoutInfo
 }
+
+func (this S3Info) Validate() error {
+	return nil
+}
+func (this LayoutInfo) Validate() error {
+	return nil
+}

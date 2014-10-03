@@ -1,6 +1,8 @@
 package storage
 
 // Enables a locally configured file system directory to serve as a remote.
+// TODO: have md5_fs and simple_fs?
+// md5_fs has md5 checksum appended to each file
 type FilesystemStorage struct {
 	filenameAppendMD5 bool
 }

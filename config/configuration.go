@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/smartystreets/raptr/storage"
 )
@@ -15,10 +15,7 @@ type Configuration struct {
 }
 
 func LoadConfiguration(fullPath string) (Configuration, error) {
-	// TODO: fullPath should always be relative to current working directory, eg.
-	// ../filename.conf and filename.conf. /filename.conf is relative to root
-	workingDirectory, _ := os.Getwd()
-	fullPath = path.Join(workingDirectory, fullPath)
+	fullPath = filepath.Clean(fullPath)
 
 	// TODO
 	// fullPath (if provided)
@@ -48,36 +45,35 @@ func readFile(fullPath string) (Configuration, error) {
 		return newConfiguration(deserialized)
 	}
 }
-
 func newConfiguration(format ConfigFormat) (Configuration, error) {
 	repos := map[string]RepositoryInfo{}
 	layouts := map[string]LayoutInfo{}
 
 	for key, item := range format.Layouts {
 		item.LayoutKey = key
-		layouts[key] = item
+		if err := item.Validate(); err != nil {
+			return Configuration{}, fmt.Errorf("Layout '%s' has missing or corrupt values.", key)
+		} else {
+			layouts[key] = item
+		}
 	}
 
 	for key, item := range format.S3 {
 		item.StorageKey = key
-
 		if layout, found := layouts[item.LayoutName]; !found {
 			return Configuration{}, fmt.Errorf("S3 store '%s' references not-existent layout '%s'.", key, item.LayoutName)
+		} else if err := item.Validate(); err != nil {
+			return Configuration{}, fmt.Errorf("S3 store '%s' has missing or corrupt values.", key)
 		} else if store, err := newS3Storage(item); err != nil {
 			return Configuration{}, fmt.Errorf("S3 store '%s' cannot be initialized.", key)
 		} else {
-			repos[key] = RepositoryInfo{
-				StorageKey: key,
-				Storage:    store,
-				Layout:     layout,
-			}
+			repos[key] = RepositoryInfo{StorageKey: key, Storage: store, Layout: layout}
 		}
 	}
 
 	return Configuration{repos: repos}, nil
 }
 func newS3Storage(info S3Info) (storage.Storage, error) {
-	// TODO: missing/empty values in the configuration file, e.g. bucket name
 	// TODO: from where else can/should we load security credentials?
 	actual := storage.NewS3Storage(
 		info.RegionName,
