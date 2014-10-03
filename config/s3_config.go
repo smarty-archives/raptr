@@ -6,8 +6,7 @@ import (
 	"github.com/smartystreets/raptr/storage"
 )
 
-type S3Config struct {
-	StorageKey string `json:-`
+type s3Config struct {
 	RegionName string `json:"region"`
 	BucketName string `json:"bucket"`
 	PathPrefix string `json:"prefix"`
@@ -16,11 +15,11 @@ type S3Config struct {
 	Timeout    int    `json:"timeout"`
 }
 
-func (this S3Config) Validate() error {
+func (this s3Config) validate() error {
 	return nil // TODO
 }
 
-func (this S3Config) buildStorage() (storage.Storage, error) {
+func (this s3Config) buildStorage() (storage.Storage, error) {
 	// FUTURE: from where else can/should we load security credentials?
 	actual := storage.NewS3Storage(
 		this.RegionName,

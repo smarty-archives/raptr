@@ -20,7 +20,7 @@ func LoadConfiguration(fullPath string) (Configuration, error) {
 	return readFile(filepath.Clean(fullPath))
 }
 func readFile(fullPath string) (Configuration, error) {
-	deserialized := ConfigFile{}
+	deserialized := configFile{}
 	if handle, err := os.Open(fullPath); err != nil {
 		return Configuration{}, err // file doesn't exist or access problems
 	} else if contents, err := ioutil.ReadAll(handle); err != nil {
@@ -34,13 +34,12 @@ func readFile(fullPath string) (Configuration, error) {
 		return newConfiguration(deserialized)
 	}
 }
-func newConfiguration(file ConfigFile) (Configuration, error) {
+func newConfiguration(file configFile) (Configuration, error) {
 	repos := map[string]RepositoryConfig{}
 	layouts := map[string]RepositoryLayout{}
 
 	for key, item := range file.Layouts {
-		item.LayoutKey = key
-		if err := item.Validate(); err != nil {
+		if err := item.validate(); err != nil {
 			return Configuration{}, fmt.Errorf("Layout '%s' has missing or corrupt values.", key)
 		} else {
 			layouts[key] = item
@@ -48,10 +47,9 @@ func newConfiguration(file ConfigFile) (Configuration, error) {
 	}
 
 	for key, item := range file.S3 {
-		item.StorageKey = key
 		if layout, found := layouts[item.LayoutName]; !found {
 			return Configuration{}, fmt.Errorf("S3 store '%s' references not-existent layout '%s'.", key, item.LayoutName)
-		} else if err := item.Validate(); err != nil {
+		} else if err := item.validate(); err != nil {
 			return Configuration{}, fmt.Errorf("S3 store '%s' has missing or corrupt values.", key)
 		} else if store, err := item.buildStorage(); err != nil {
 			return Configuration{}, fmt.Errorf("S3 store '%s' cannot be initialized.", key)
