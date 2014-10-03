@@ -2,9 +2,10 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
+	"path"
 
 	"github.com/smartystreets/raptr/storage"
 )
@@ -14,6 +15,11 @@ type Configuration struct {
 }
 
 func LoadConfiguration(fullPath string) (Configuration, error) {
+	// TODO: fullPath should always be relative to current working directory, eg.
+	// ../filename.conf and filename.conf. /filename.conf is relative to root
+	workingDirectory, _ := os.Getwd()
+	fullPath = path.Join(workingDirectory, fullPath)
+
 	// TODO
 	// fullPath (if provided)
 	// working directory/.ratpr
@@ -21,6 +27,11 @@ func LoadConfiguration(fullPath string) (Configuration, error) {
 	// /etc/raptr.conf
 	return readFile(fullPath)
 }
+func (this Configuration) Repository(name string) (RepositoryInfo, bool) {
+	item, found := this.repos[name]
+	return item, found
+}
+
 func readFile(fullPath string) (Configuration, error) {
 	deserialized := ConfigFormat{}
 
@@ -34,11 +45,11 @@ func readFile(fullPath string) (Configuration, error) {
 		return Configuration{}, err // malformed JSON
 	} else {
 		handle.Close()
-		return newConfiguration(deserialized), nil
+		return newConfiguration(deserialized)
 	}
 }
 
-func newConfiguration(format ConfigFormat) Configuration {
+func newConfiguration(format ConfigFormat) (Configuration, error) {
 	repos := map[string]RepositoryInfo{}
 	layouts := map[string]LayoutInfo{}
 
@@ -51,11 +62,9 @@ func newConfiguration(format ConfigFormat) Configuration {
 		item.StorageKey = key
 
 		if layout, found := layouts[item.LayoutName]; !found {
-			log.Printf("[CONFIG] S3 store '%s' references not-existent layout '%s'.\n", key, item.LayoutName)
-			os.Exit(1)
+			return Configuration{}, fmt.Errorf("S3 store '%s' references not-existent layout '%s'.", key, item.LayoutName)
 		} else if store, err := newS3Storage(item); err != nil {
-			log.Printf("[CONFIG] S3 store '%s' cannot be initialized.\n", key)
-			os.Exit(1)
+			return Configuration{}, fmt.Errorf("S3 store '%s' cannot be initialized.", key)
 		} else {
 			repos[key] = RepositoryInfo{
 				StorageKey: key,
@@ -63,10 +72,9 @@ func newConfiguration(format ConfigFormat) Configuration {
 				Layout:     layout,
 			}
 		}
-
 	}
 
-	return Configuration{}
+	return Configuration{repos: repos}, nil
 }
 func newS3Storage(info S3Info) (storage.Storage, error) {
 	// TODO: missing/empty values in the configuration file, e.g. bucket name

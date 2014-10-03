@@ -7,6 +7,7 @@ type ConfigFormat struct {
 	S3      map[string]S3Info `json:"s3"`
 }
 
+// TODO: function to validate contents
 type LayoutInfo struct {
 	LayoutKey     string   `json:-`
 	Distributions []string `json:"distributions"`
@@ -14,6 +15,7 @@ type LayoutInfo struct {
 	Architectures []string `json:"architectures"`
 }
 
+// TODO: function to validate contents
 type S3Info struct {
 	StorageKey string `json:-`
 	RegionName string `json:"region"`
