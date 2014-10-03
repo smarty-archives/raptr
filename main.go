@@ -14,7 +14,7 @@ func main() {
 	if configuration, err := config.LoadConfiguration("raptr.conf"); err != nil {
 		log.Println("[CONFIG ERROR]:", err)
 		os.Exit(1)
-	} else if repo, found := configuration.Repository("repo-1"); !found {
+	} else if repo, found := configuration.Open("repo-1"); !found {
 		log.Println("[CONFIG ERROR]: Repo named 'repo-1' not found.")
 		os.Exit(1)
 	} else {

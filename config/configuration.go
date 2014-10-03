@@ -12,9 +12,9 @@ type Configuration struct {
 	repos map[string]RepositoryConfig
 }
 
-func (this Configuration) Repository(name string) (RepositoryConfig, bool) {
-	item, found := this.repos[name]
-	return item, found
+func (this Configuration) Open(repositoryName string) (RepositoryConfig, bool) {
+	repo, found := this.repos[repositoryName]
+	return repo, found
 }
 func LoadConfiguration(fullPath string) (Configuration, error) {
 	return readFile(filepath.Clean(fullPath))
