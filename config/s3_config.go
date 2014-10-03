@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/smartystreets/raptr/storage"
@@ -16,7 +17,11 @@ type s3Config struct {
 }
 
 func (this s3Config) validate() error {
-	return nil // TODO
+	if this.BucketName == "" {
+		return fmt.Errorf("The bucket name is missing.")
+	} else {
+		return nil
+	}
 }
 
 func (this s3Config) buildStorage() (storage.Storage, error) {
