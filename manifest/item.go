@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -59,7 +60,6 @@ func isValidValue(text string) bool {
 		return true
 	}
 }
-
 func determineType(key, value string) int {
 	if len(key) == 0 && len(value) == 0 {
 		return separator
@@ -71,6 +71,21 @@ func determineType(key, value string) int {
 		return valueOnly
 	} else {
 		return keyValue
+	}
+}
+
+func (this *lineItem) String() string {
+	switch this.Type {
+	case comment:
+		return this.Value
+	case keyValue:
+		return fmt.Sprintf("%s: %s", this.Key, this.Value)
+	case keyOnly:
+		return fmt.Sprintf("%s: ", this.Key) // preserve whitespace after colon
+	case valueOnly:
+		return fmt.Sprintf(" %s", this.Value)
+	default:
+		return ""
 	}
 }
 
