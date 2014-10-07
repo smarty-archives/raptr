@@ -1,18 +1,12 @@
 backends/remotes/storage:
 	fs
-	cached && md5_fs?
+	[FUTURE] cached && md5_fs?
 
-configuration:
-	read configuration file from various locations
-
-CLI: 
-	in progress (obiwan)
+file parsing:
+	reading and verifying deb files
+	reading and verifying dsc and associated files
+	reading our custom manifest files
+	reading Source files
+	reading Packages files
 
 application logic:
-
-
-reading and verifying deb files
-reading and verifying dsc and associated files
-reading our custom manifest files
-reading Source files
-reading Packages files
