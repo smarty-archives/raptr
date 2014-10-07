@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/smartystreets/go-conf"
 )
 
 type Configuration struct {
@@ -17,7 +19,15 @@ func (this Configuration) Open(repositoryName string) (RepositoryConfig, bool) {
 	return repo, found
 }
 func LoadConfiguration(fullPath string) (Configuration, error) {
-	return readFile(filepath.Clean(fullPath))
+	if deserialized, err := readFile(filepath.Clean(fullPath)); !os.IsNotExist(err) {
+		return deserialized, err // the result wasn't a "file not found" issue
+	} else if reader, err := conf.Read(".raptr", "raptr.conf"); err != nil {
+		return Configuration{}, err // can't find any kind of config file
+	} else if err := json.NewDecoder(reader).Decode(&deserialized); err != nil {
+		return Configuration{}, err // unable to deserialize
+	} else {
+		return deserialized, nil // success
+	}
 }
 func readFile(fullPath string) (Configuration, error) {
 	deserialized := configFile{}
