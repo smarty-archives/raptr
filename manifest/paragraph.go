@@ -7,13 +7,21 @@ import (
 )
 
 type Paragraph struct {
-	keys  map[string]*LineItem
-	items []*LineItem
+	allKeys     map[string]*LineItem
+	orderedKeys []string
+	items       []*LineItem
+}
+
+func NewParagraph() *Paragraph {
+	return &Paragraph{
+		allKeys:     map[string]*LineItem{},
+		orderedKeys: []string{},
+		items:       []*LineItem{},
+	}
 }
 
 func ReadParagraph(reader *Reader) (*Paragraph, error) {
-	keys := map[string]*LineItem{}
-	items := []*LineItem{}
+	this := NewParagraph()
 
 	for {
 		if item, err := reader.Read(); err == io.EOF {
@@ -22,29 +30,44 @@ func ReadParagraph(reader *Reader) (*Paragraph, error) {
 			return nil, err
 		} else if item.Type == separator {
 			break
-		} else if item.Type == comment {
-			items = append(items, item)
-		} else if item.Type == valueOnly {
-			items = append(items, item)
-		} else if _, contains := keys[strings.ToLower(item.Key)]; contains {
-			return nil, errors.New("Malformed file--the key already exists.")
-		} else {
-			keys[strings.ToLower(item.Key)] = item
-			items = append(items, item)
+		} else if err := this.Add(item, false); err != nil {
+			return nil, err
 		}
 	}
 
-	return &Paragraph{keys: keys, items: items}, nil
+	return this, nil
 }
 
-func (this *Paragraph) Keys() []string {
-	keys := []string{}
-	for _, item := range this.items {
-		if len(item.Key) > 0 {
-			keys = append(keys, item.Key)
+func (this *Paragraph) Add(item *LineItem, overwrite bool) error {
+	if item == nil {
+		return nil
+	} else if item.Type == separator {
+		return nil
+	} else if item.Type == comment {
+		this.items = append(this.items, item)
+	} else if item.Type == valueOnly {
+		this.items = append(this.items, item)
+	} else if title := strings.ToTitle(item.Key); len(title) == 0 {
+		return nil
+	} else if _, contains := this.allKeys[title]; contains && !overwrite {
+		return errors.New("The paragraph already contains the specified key")
+	} else if !contains {
+		this.allKeys[title] = item
+		this.orderedKeys = append(this.orderedKeys, item.Key)
+		this.items = append(this.items, item)
+		return nil
+	} else {
+		// overwrite
+		this.allKeys[title] = item
+		for i, existing := range this.items {
+			if title == strings.ToTitle(existing.Key) {
+				this.items[i] = item
+				break
+			}
 		}
 	}
-	return keys
+
+	return nil
 }
 
 func (this *Paragraph) Write(writer *Writer) error {
