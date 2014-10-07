@@ -5,13 +5,13 @@ import (
 	"strings"
 )
 
-type LineItem struct {
-	itemType int
-	key      string // unique per "paragraph" (case insensitive)
-	value    string
+type lineItem struct {
+	Type  int
+	Key   string // unique per "paragraph" (case insensitive)
+	Value string
 }
 
-func NewLine(key, value string) (*LineItem, error) {
+func newLine(key, value string) (*lineItem, error) {
 	key = strings.TrimSpace(key)
 	value = strings.TrimSpace(value)
 
@@ -20,22 +20,22 @@ func NewLine(key, value string) (*LineItem, error) {
 	} else if !isValidValue(value) {
 		return nil, errors.New("The value of the line item contains invalid characters.")
 	} else {
-		return &LineItem{
-			itemType: determineType(key, value),
-			key:      key,
-			value:    value,
+		return &lineItem{
+			Type:  determineType(key, value),
+			Key:   key,
+			Value: value,
 		}, nil
 	}
 }
-func parse(unparsed string) (*LineItem, error) {
+func parse(unparsed string) (*lineItem, error) {
 	if len(strings.TrimSpace(unparsed)) == 0 {
-		return NewLine("", "")
+		return newLine("", "")
 	} else if strings.HasPrefix(unparsed, "#") {
-		return NewLine("", unparsed)
+		return newLine("", unparsed)
 	} else if strings.HasPrefix(unparsed, " ") || strings.HasPrefix(unparsed, "\t") {
-		return NewLine("", unparsed)
+		return newLine("", unparsed)
 	} else if colonIndex := strings.Index(unparsed, ":"); colonIndex >= 0 {
-		return NewLine(unparsed[0:colonIndex], unparsed[colonIndex+1:])
+		return newLine(unparsed[0:colonIndex], unparsed[colonIndex+1:])
 	} else {
 		return nil, errors.New("Malformed input")
 	}
@@ -62,32 +62,22 @@ func isValidValue(text string) bool {
 
 func determineType(key, value string) int {
 	if len(key) == 0 && len(value) == 0 {
-		return Separator
+		return separator
 	} else if strings.HasPrefix(value, "#") {
-		return Comment
+		return comment
 	} else if len(value) == 0 {
-		return KeyOnly
+		return keyOnly
 	} else if len(key) == 0 {
-		return ValueOnly
+		return valueOnly
 	} else {
-		return KeyValue
+		return keyValue
 	}
 }
 
-func (this LineItem) Type() int {
-	return this.itemType
-}
-func (this *LineItem) Key() string {
-	return this.key
-}
-func (this *LineItem) Value() string {
-	return this.value
-}
-
 const (
-	Separator = iota
-	Comment
-	KeyValue
-	KeyOnly
-	ValueOnly
+	separator = iota
+	comment
+	keyValue
+	keyOnly
+	valueOnly
 )
