@@ -1,7 +1,6 @@
 package messages
 
 type UploadCommand struct {
-	ConfigFile   string // optional
 	PackageName  string
 	PackagePath  string
 	StorageName  string
@@ -10,7 +9,6 @@ type UploadCommand struct {
 }
 
 type LinkCommand struct {
-	ConfigFile         string // optional
 	PackageName        string
 	PackageVersion     string
 	StorageName        string
@@ -20,7 +18,6 @@ type LinkCommand struct {
 }
 
 type UnlinkCommand struct {
-	ConfigFile     string // optional
 	PackageName    string
 	PackageVersion string
 	StorageName    string
@@ -29,6 +26,5 @@ type UnlinkCommand struct {
 }
 
 type CleanCommand struct {
-	ConfigFile  string // optional
 	StorageName string
 }

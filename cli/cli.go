@@ -7,13 +7,34 @@ import (
 	"github.com/smartystreets/raptr/messages"
 )
 
-func ReadMessage() interface{} {
+func ReadMessage() (interface{}, string) {
 	usage := `
 Usage:
-    raptr upload --name=N --path=P --storage=S --category=C [--distribution=D] [--config=CONF]
-    raptr link --name=N --version=V --storage=S --category=C --source-distribution=SD --target-distribution=TD [--config=CONF]
-    raptr unlink --name=N --version=V --storage=S --category=C --distribution=D [--config=CONF]
-    raptr clean --storage=S [--config=CONF]
+    raptr upload
+        --name=N
+        --path=P
+        --storage=S
+        --category=C
+        [--distribution=D]
+        [--config=CONF]
+    raptr link
+        --name=N
+        --version=V
+        --storage=S
+        --category=C
+        --source-distribution=SD
+        --target-distribution=TD
+        [--config=CONF]
+    raptr unlink
+        --name=N
+        --version=V
+        --storage=S
+        --category=C
+        --distribution=D
+        [--config=CONF]
+    raptr clean
+        --storage=S
+        [--config=CONF]
     raptr -h
 
 Examples:
@@ -41,7 +62,6 @@ Options:
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	fmt.Printf("\nArguments:\n%v\n\n", arguments)
 
 	configFile := ""
 	if c, _ := arguments["--config"]; c != nil && len(c.(string)) > 0 {
@@ -53,43 +73,35 @@ Options:
 	}
 
 	if arguments["upload"] == true {
-		upload := messages.UploadCommand{
-			ConfigFile:   configFile,                   // optional
+		return messages.UploadCommand{
 			PackageName:  arguments["--name"].(string), // .([]string)[0],
 			PackagePath:  arguments["--path"].(string),
 			StorageName:  arguments["--storage"].(string),
 			Category:     arguments["--category"].(string),
 			Distribution: distribution, // optional
-		}
-		return upload
+		}, configFile
 	} else if arguments["link"] == true {
-		link := messages.LinkCommand{
-			ConfigFile:         configFile, // optional
+		return messages.LinkCommand{
 			PackageName:        arguments["--name"].(string),
 			PackageVersion:     arguments["--version"].(string),
 			StorageName:        arguments["--storage"].(string),
 			Category:           arguments["--category"].(string),
 			SourceDistribution: arguments["--source-distribution"].(string),
 			TargetDistribution: arguments["--target-distribution"].(string),
-		}
-		return link
+		}, configFile
 	} else if arguments["unlink"] == true {
-		unlink := messages.UnlinkCommand{
-			ConfigFile:     configFile, // optional
+		return messages.UnlinkCommand{
 			PackageName:    arguments["--name"].(string),
 			PackageVersion: arguments["--version"].(string),
 			StorageName:    arguments["--storage"].(string),
 			Category:       arguments["--category"].(string),
 			Distribution:   distribution,
-		}
-		return unlink
+		}, configFile
 	} else if arguments["clean"] == true {
-		clean := messages.CleanCommand{
-			ConfigFile:  configFile, // optional
+		return messages.CleanCommand{
 			StorageName: arguments["--storage"].(string),
-		}
-		return clean
+		}, configFile
 	}
 
-	return nil
+	return nil, ""
 }
