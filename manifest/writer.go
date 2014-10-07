@@ -13,7 +13,7 @@ func NewWriter(writer io.Writer) *Writer {
 	return &Writer{writer: writer}
 }
 
-func (this *Writer) write(line *lineItem) error {
+func (this *Writer) Write(line *LineItem) error {
 	if line == nil {
 		return errors.New("Line not provided.")
 	} else {

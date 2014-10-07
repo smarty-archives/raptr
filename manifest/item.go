@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-type lineItem struct {
+type LineItem struct {
 	Type  int
 	Key   string // unique per "paragraph" (case insensitive)
 	Value string
 }
 
-func newLine(key, value string) (*lineItem, error) {
+func NewLine(key, value string) (*LineItem, error) {
 	key = strings.TrimSpace(key)
 	value = strings.TrimSpace(value)
 
@@ -21,22 +21,22 @@ func newLine(key, value string) (*lineItem, error) {
 	} else if !isValidValue(value) {
 		return nil, errors.New("The value of the line item contains invalid characters.")
 	} else {
-		return &lineItem{
+		return &LineItem{
 			Type:  determineType(key, value),
 			Key:   key,
 			Value: value,
 		}, nil
 	}
 }
-func parse(unparsed string) (*lineItem, error) {
+func parse(unparsed string) (*LineItem, error) {
 	if len(strings.TrimSpace(unparsed)) == 0 {
-		return newLine("", "")
+		return NewLine("", "")
 	} else if strings.HasPrefix(unparsed, "#") {
-		return newLine("", unparsed)
+		return NewLine("", unparsed)
 	} else if strings.HasPrefix(unparsed, " ") || strings.HasPrefix(unparsed, "\t") {
-		return newLine("", unparsed)
+		return NewLine("", unparsed)
 	} else if colonIndex := strings.Index(unparsed, ":"); colonIndex >= 0 {
-		return newLine(unparsed[0:colonIndex], unparsed[colonIndex+1:])
+		return NewLine(unparsed[0:colonIndex], unparsed[colonIndex+1:])
 	} else {
 		return nil, errors.New("Malformed input")
 	}
@@ -74,7 +74,7 @@ func determineType(key, value string) int {
 	}
 }
 
-func (this *lineItem) String() string {
+func (this *LineItem) String() string {
 	switch this.Type {
 	case comment:
 		return this.Value

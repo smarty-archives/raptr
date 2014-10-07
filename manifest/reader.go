@@ -14,7 +14,7 @@ func NewReader(reader io.Reader) *Reader {
 	return &Reader{reader: bufio.NewReader(reader)}
 }
 
-func (this *Reader) read() (*lineItem, error) {
+func (this *Reader) Read() (*LineItem, error) {
 	if unparsed, err := this.reader.ReadString('\n'); err != nil {
 		return nil, err
 	} else if strings.HasSuffix(unparsed, "\r") {
