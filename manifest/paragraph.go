@@ -36,6 +36,17 @@ func ReadParagraph(reader *Reader) (*Paragraph, error) {
 
 	return &Paragraph{keys: keys, items: items}, nil
 }
+
+func (this *Paragraph) Keys() []string {
+	keys := []string{}
+	for _, item := range this.items {
+		if len(item.Key) > 0 {
+			keys = append(keys, item.Key)
+		}
+	}
+	return keys
+}
+
 func (this *Paragraph) Write(writer *Writer) error {
 	if len(this.items) == 0 {
 		return nil
