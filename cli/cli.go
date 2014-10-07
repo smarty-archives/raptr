@@ -17,6 +17,7 @@ Usage:
         --category=C
         [--distribution=D]
         [--config=CONF]
+        
     raptr link
         --name=N
         --version=V
@@ -25,6 +26,7 @@ Usage:
         --source-distribution=SD
         --target-distribution=TD
         [--config=CONF]
+        
     raptr unlink
         --name=N
         --version=V
@@ -32,9 +34,11 @@ Usage:
         --category=C
         --distribution=D
         [--config=CONF]
+        
     raptr clean
         --storage=S
         [--config=CONF]
+        
     raptr -h
 
 Examples:
