@@ -47,20 +47,20 @@ func (this *Paragraph) Add(item *LineItem, overwrite bool) error {
 		this.items = append(this.items, item)
 	} else if item.Type == valueOnly {
 		this.items = append(this.items, item)
-	} else if title := strings.ToTitle(item.Key); len(title) == 0 {
+	} else if normalized := normalizeKey(item.Key); len(normalized) == 0 {
 		return nil
-	} else if _, contains := this.allKeys[title]; contains && !overwrite {
+	} else if _, contains := this.allKeys[normalized]; contains && !overwrite {
 		return errors.New("The paragraph already contains the specified key")
 	} else if !contains {
-		this.allKeys[title] = item
+		this.allKeys[normalized] = item
 		this.orderedKeys = append(this.orderedKeys, item.Key)
 		this.items = append(this.items, item)
 		return nil
 	} else {
 		// overwrite
-		this.allKeys[title] = item
+		this.allKeys[normalized] = item
 		for i, existing := range this.items {
-			if title == strings.ToTitle(existing.Key) {
+			if normalized == strings.ToTitle(existing.Key) {
 				this.items[i] = item
 				break
 			}
@@ -68,6 +68,23 @@ func (this *Paragraph) Add(item *LineItem, overwrite bool) error {
 	}
 
 	return nil
+}
+func normalizeKey(key string) string {
+	if len(key) == 0 {
+		return key
+	} else if key = strings.TrimSpace(strings.ToLower(key)); len(key) == 0 {
+		return key
+	} else if key == "md5sum" {
+		return "MD5Sum"
+	} else if key == "sha1sum" {
+		return "SHA1Sum"
+	} else if key == "sha256sum" {
+		return "SHA256Sum"
+	} else if key == "sha512sum" {
+		return "SHA512Sum"
+	} else {
+		return strings.ToTitle(key)
+	}
 }
 
 func (this *Paragraph) Write(writer *Writer) error {
