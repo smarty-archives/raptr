@@ -26,7 +26,7 @@ Usage:
         --source-distribution=SD
         --target-distribution=TD
         [--config=CONF]
-        
+
     raptr unlink
         --name=N
         --version=V
@@ -40,14 +40,13 @@ Usage:
         [--config=CONF]
         
     raptr -h
-
+        
 Examples:
     raptr upload --name=liveaddress-logging --path=/package/files --storage=s3 --category=operations --distribution=staging
     raptr link --name=liveaddress-logging --version=1.0.7 --storage=s3 --category=liveaddress --source-distribution=staging --target-distribution=production
     raptr unlink --name=liveaddress-logging --version=1.0.7 --storage=s3 --category=liveaddress --distribution=production
     raptr clean --storage=named-storage
-
-
+        
 Options:
     --name=N                  Name of the package
     --version=V               Version of the package
@@ -62,7 +61,7 @@ Options:
 `
 
 	//func Parse(doc string, argv []string, help bool, version string, optionsFirst bool, exit ...bool) (map[string]interface{}, error)
-	arguments, err := docopt.Parse(usage, nil, true, "raptr (Remote Apt Repository) version 1.2.3", false, true)
+	arguments, err := docopt.Parse(usage, nil, true, "raptr (Remote Apt Repository)", false, true)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
