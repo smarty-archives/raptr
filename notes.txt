@@ -112,6 +112,8 @@ manifest files necessary for the action at hand
 deb|dsc files with ignored architectures according to the configuration file will be
 display an explicit warning during the upload phase:
 "[WARNING] Skipping ignored architecture some-file_1.0.7_arm64.deb"
+(why not just upload all the deb|dsc files regardless of architecture?)
+(at some future day, the repo might add arm64 and we could then link with those packages)
 
 We still have the consideration of whether to upload metadata alongside the uploaded files
 If we do upload the metadata, we can then call upload distinct from link, but it requires
