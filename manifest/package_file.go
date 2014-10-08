@@ -24,6 +24,7 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
 	} else if computed, err := computeMD5(handle); err != nil {
+		handle.Close()
 		return nil, err
 	} else {
 		// TODO: *open* the debian file and read the manifest/control file
