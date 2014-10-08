@@ -19,24 +19,35 @@ func NewConcurrentStorage(inner Storage) *ConcurrentStorage {
 
 func (this *ConcurrentStorage) Put(request PutRequest) PutResponse {
 	if err := this.ensureContents(request, CheckBeforePut); err != nil {
-		return PutResponse{Path: request.Path, Error: err}
+		return PutResponse{Path: request.Path, Error: err} // md5 differs from expected
+	} else if this.alreadyExists(request) {
+		return PutResponse{Path: request.Path} // no need to upload a duplicate file
 	} else if response := this.inner.Put(request); response.Error != nil {
-		return response
+		return response // error trying to put contents
 	} else if err := this.ensureContents(request, CheckAfterPut); err != nil {
-		return PutResponse{Path: request.Path, Error: err}
+		return PutResponse{Path: request.Path, Error: err} // md5 differs from expected
 	} else {
-		return response
+		return response //success
 	}
 }
 func (this *ConcurrentStorage) ensureContents(request PutRequest, concurrency int) error {
 	if request.Concurrency&concurrency != concurrency {
-		return nil
+		return nil // this isn't the concurrency level you're looking for
 	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
-		return response.Error
+		return response.Error // not found, permissions, unavailable, etc.
 	} else if bytes.Compare(request.ExpectedMD5, response.MD5) != 0 {
 		return ConcurrencyError
 	} else {
 		return nil
+	}
+}
+func (this *ConcurrentStorage) alreadyExists(request PutRequest) bool {
+	if len(request.MD5) == 0 {
+		return false // no MD5 to help perform a conditional put
+	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
+		return false // doesn't exist or some other kind error
+	} else {
+		return bytes.Equal(request.MD5, response.MD5) // same = already exists
 	}
 }
 
