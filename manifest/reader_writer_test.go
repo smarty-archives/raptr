@@ -3,8 +3,6 @@ package manifest
 import (
 	"bytes"
 	"crypto/md5"
-	"encoding/hex"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -19,7 +17,6 @@ func TestReaderWriter(t *testing.T) {
 			reader := NewReader(stringReader)
 
 			readSum := md5.Sum([]byte(debianFile))
-			fmt.Println("MD5:", hex.EncodeToString(readSum[:]))
 
 			buffer := bytes.NewBuffer([]byte{})
 			writer := NewWriter(buffer)
@@ -30,18 +27,12 @@ func TestReaderWriter(t *testing.T) {
 				} else if err != nil {
 					panic(err)
 				} else {
-					fmt.Println(item)
 					writer.Write(item)
 				}
 			}
 
-			fmt.Println("--------------------------------")
-			written := string(buffer.Bytes())
-			fmt.Println(written)
 			writeSum := md5.Sum(buffer.Bytes())
-			fmt.Println("MD5:", hex.EncodeToString(writeSum[:]))
-
-			So(readSum, ShouldEqual, writeSum)
+			So(readSum, ShouldResemble, writeSum)
 		})
 	})
 }
