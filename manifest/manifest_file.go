@@ -22,7 +22,7 @@ func BuildPath(category, bundle, version string) string {
 }
 
 func (this *ManifestFile) Path() string {
-	return path.Base(BuildPath(this.category, this.bundle, this.version))
+	return path.Dir(BuildPath(this.category, this.bundle, this.version))
 }
 func (this *ManifestFile) Add(pkg LocalPackage) (bool, error) {
 	return false, nil

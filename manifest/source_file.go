@@ -4,6 +4,10 @@ package manifest
 // NOTE: we will only ever read these files
 type SourceFile struct{}
 
+func NewSourceFile(fullPath string) (*SourceFile, error) {
+	return nil, nil
+}
+
 func (this *SourceFile) Name() string {
 	return ""
 }

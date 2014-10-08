@@ -81,6 +81,8 @@ func computeMD5(fullPath string) ([]byte, error) {
 	}
 }
 func walk(fullPath string) []ListItem {
+	// TODO: this should only walk the current directory, it shouldn't decend
+	// into suboordinate directories...???
 	items := []ListItem{}
 	filepath.Walk(fullPath, func(directory string, info os.FileInfo, err error) error {
 		if info.IsDir() {
