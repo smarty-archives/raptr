@@ -1,7 +1,12 @@
 package manifest
 
 import (
-	"os"
+	"bytes"
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -9,42 +14,36 @@ import (
 
 func TestReaderWriter(t *testing.T) {
 	Convey("When a Debian is read and then written", t, func() {
-		Convey("The hash should be the same.", nil)
+		Convey("The hash should be the same.", func() {
+			stringReader := strings.NewReader(debianFile)
+			reader := NewReader(stringReader)
+
+			readSum := md5.Sum([]byte(debianFile))
+			fmt.Println("MD5:", hex.EncodeToString(readSum[:]))
+
+			buffer := bytes.NewBuffer([]byte{})
+			writer := NewWriter(buffer)
+
+			for {
+				if item, err := reader.Read(); err == io.EOF {
+					break
+				} else if err != nil {
+					panic(err)
+				} else {
+					fmt.Println(item)
+					writer.Write(item)
+				}
+			}
+
+			fmt.Println("--------------------------------")
+			written := string(buffer.Bytes())
+			fmt.Println(written)
+			writeSum := md5.Sum(buffer.Bytes())
+			fmt.Println("MD5:", hex.EncodeToString(writeSum[:]))
+
+			So(readSum, ShouldEqual, writeSum)
+		})
 	})
-
-	handle, err := os.Open("debian/control")
-	if err != nil {
-		panic(err)
-	}
-	defer handle.Close()
-
-	// payload, _ := ioutil.ReadAll(handle)
-	// handle.Seek(0, 0)
-	// computed := md5.Sum(payload)
-	// fmt.Println("MD5:", hex.EncodeToString(computed[:]))
-
-	// reader := manifest.NewReader(handle)
-
-	// buffer := bytes.NewBuffer([]byte{})
-	// writer := manifest.NewWriter(buffer)
-
-	// for {
-	// 	if item, err := reader.Read(); err == io.EOF {
-	// 		break
-	// 	} else if err != nil {
-	// 		panic(err)
-	// 	} else {
-	// 		fmt.Println(item)
-	// 		writer.Write(item)
-	// 	}
-	// }
-
-	// fmt.Println("--------------------------------")
-	// written := string(buffer.Bytes())
-	// fmt.Println(written)
-	// computed1 := md5.Sum(buffer.Bytes())
-	// fmt.Println("MD5:", hex.EncodeToString(computed1[:]))
-
 }
 
 const debianFile = `Format: 3.0 (quilt)

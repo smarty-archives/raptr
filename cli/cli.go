@@ -26,7 +26,7 @@ Usage:
         --source-distribution=SD
         --target-distribution=TD
         [--config=CONF]
-
+        
     raptr unlink
         --name=N
         --version=V
