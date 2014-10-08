@@ -3,6 +3,7 @@ package tasks
 import (
 	"log"
 	"os"
+	"path"
 
 	"github.com/smartystreets/raptr/manifest"
 	"github.com/smartystreets/raptr/storage"
@@ -22,12 +23,12 @@ func NewUploadTask(local, remote storage.Storage) *UploadTask {
 // will be done during the validation phase (prior to this)
 // such that any concurrency-related errors that might occur here
 // won't cause the validation to be re-run
-func (this *UploadTask) Upload(category, bundle, version string, files []string) error {
+func (this *UploadTask) Upload(category, bundle, version string, packages []manifest.LocalPackage) error {
 	manifestPath := manifest.BuildPath(category, bundle, version)
 	manifestResponse := this.remote.Get(storage.GetRequest{Path: manifestPath})
-	if manifestFile, err := parseManifestResponse(manifestResponse); err != nil {
-		return err // unable to access remote manifest
-	} else if err := this.uploadBundleFiles(files, manifestFile); err != nil {
+	if manifestFile, err := parseManifestResponse(manifestResponse, category, bundle, version); err != nil {
+		return err // unable to access or parse remote manifest
+	} else if err := this.uploadPackages(packages, manifestFile); err != nil {
 		return err // one or more file uploads failed
 	} else {
 		contents := storage.NewReader(manifestFile.Bytes())
@@ -36,9 +37,9 @@ func (this *UploadTask) Upload(category, bundle, version string, files []string)
 	}
 }
 
-func parseManifestResponse(response storage.GetResponse) (*manifest.ManifestFile, error) {
+func parseManifestResponse(response storage.GetResponse, category, bundle, version string) (*manifest.ManifestFile, error) {
 	if response.Error != nil && os.IsNotExist(response.Error) {
-		return manifest.NewManifestFile(), nil
+		return manifest.NewManifestFile(category, bundle, version), nil
 	} else if response.Error != nil {
 		return nil, response.Error
 	} else if parsed, err := manifest.ParseManifest(response.Contents); err != nil {
@@ -47,18 +48,26 @@ func parseManifestResponse(response storage.GetResponse) (*manifest.ManifestFile
 		return parsed, nil
 	}
 }
-func (this *UploadTask) uploadBundleFiles(files []string, manifestFile *manifest.ManifestFile) error {
-	uploads := []storage.PutRequest{}
+func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifestFile *manifest.ManifestFile) error {
+	puts := []storage.PutRequest{}
 
-	for _, file := range files {
-		if !manifestFile.Add(file) {
-			log.Println()
+	for _, pkg := range packages {
+		if added, err := manifestFile.Add(pkg); err != nil {
+			return err // problem adding the file to the manifest, e.g. integrity or permissions errors, etc.
+		} else if !added {
+			log.Printf("[INFO] The file '%s' is already contained in the manifest--SKIPPING.\n", pkg.Name())
 		} else {
-			uploads = append(uploads, storage.PutRequest{}) // TODO
+			for _, file := range pkg.Files() {
+				puts = append(puts, storage.PutRequest{
+					Path:     path.Join(manifestFile.Path(), file.Name),
+					Contents: file.Contents,
+					MD5:      file.MD5,
+				})
+			}
 		}
 	}
 
-	for _, response := range this.multi.Put(uploads...) {
+	for _, response := range this.multi.Put(puts...) {
 		if response.Error != nil {
 			return response.Error
 		}
