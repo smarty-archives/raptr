@@ -16,10 +16,15 @@ type Checksum struct {
 }
 
 func Compute(contents []byte) *Checksum {
+	md5sum := md5.Sum(contents)
+	sha1sum := sha1.Sum(contents)
+	sha256sum := sha256.Sum256(contents)
+	sha512sum := sha512.Sum512(contents)
+
 	return &Checksum{
-		MD5:    md5.Sum(contents)[:],
-		SHA1:   sha1.Sum(contents)[:],
-		SHA256: sha256.Sum256(contents)[:],
-		SHA512: sha512.Sum512(contents)[:],
+		MD5:    md5sum[:],
+		SHA1:   sha1sum[:],
+		SHA256: sha256sum[:],
+		SHA512: sha512sum[:],
 	}
 }
