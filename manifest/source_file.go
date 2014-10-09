@@ -21,6 +21,8 @@ type SourceFile struct {
 func NewSourceFile(fullPath string) (*SourceFile, error) {
 	if meta := ParseFilename(fullPath); meta == nil {
 		return nil, errors.New("The file provided is not a debian binary package.")
+	} else if info, err := os.Stat(fullPath); err != nil {
+		return nil, err
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
 	} else if computed, err := ComputeChecksums(handle); err != nil {
@@ -44,8 +46,9 @@ func NewSourceFile(fullPath string) (*SourceFile, error) {
 	} else {
 		file := LocalPackageFile{
 			Name:      strings.ToLower(path.Base(fullPath)),
-			Contents:  handle,
+			Length:    uint64(info.Size()),
 			Checksums: computed,
+			Contents:  handle,
 		}
 		files = append([]LocalPackageFile{file}, files...)
 
@@ -66,7 +69,11 @@ func readSourcePackageFiles(fullPath string, paragraph *Paragraph) ([]LocalPacka
 			return nil, errors.New("Unable to parse line")
 		} else if parsedMD5, err := hex.DecodeString(md5hash); err != nil {
 			return nil, err
-		} else if handle, err := os.Open(path.Join(path.Dir(fullPath), filename)); err != nil {
+		} else if packageArchive := path.Join(path.Dir(fullPath), filename); false {
+			return nil, nil
+		} else if info, err := os.Stat(packageArchive); err != nil {
+			return nil, err
+		} else if handle, err := os.Open(packageArchive); err != nil {
 			return nil, err
 		} else if computed, err := ComputeChecksums(handle); err != nil {
 			handle.Close()
@@ -80,6 +87,7 @@ func readSourcePackageFiles(fullPath string, paragraph *Paragraph) ([]LocalPacka
 		} else {
 			files = append(files, LocalPackageFile{
 				Name:      filename,
+				Length:    uint64(info.Size()),
 				Checksums: computed,
 				Contents:  handle,
 			})

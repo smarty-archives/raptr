@@ -19,6 +19,8 @@ type PackageFile struct {
 func NewPackageFile(fullPath string) (*PackageFile, error) {
 	if meta := ParseFilename(fullPath); meta == nil {
 		return nil, errors.New("The file provided is not a debian binary package.")
+	} else if info, err := os.Stat(fullPath); err != nil {
+		return nil, err
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
 	} else if computed, err := ComputeChecksums(handle); err != nil {
@@ -35,8 +37,9 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 			architecture: meta.Architecture,
 			file: LocalPackageFile{
 				Name:      strings.ToLower(path.Base(fullPath)),
-				Contents:  handle,
+				Length:    uint64(info.Size()),
 				Checksums: computed,
+				Contents:  handle,
 			},
 		}, nil
 	}

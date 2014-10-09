@@ -12,6 +12,7 @@ type LocalPackage interface {
 
 type LocalPackageFile struct {
 	Name      string
+	Length    uint64
 	Checksums Checksum
 	Contents  storage.ReadSeekCloser
 }
