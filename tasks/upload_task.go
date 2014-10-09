@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"crypto/md5"
 	"errors"
 	"log"
 	"os"
@@ -30,15 +31,21 @@ func (this *UploadTask) Upload(category, bundle, version string, packages []mani
 	if manifestFile, err := parseManifestResponse(manifestResponse, category, bundle, version); err != nil {
 		return err // unable to access or parse remote manifest
 	} else if err := this.uploadPackages(packages, manifestFile); err == noUploadedFilesError {
-		log.Println("[INFO] No files uploaded, skipped uploading manifest")
+		log.Println("[INFO] Skipping manifest upload, manifest has not changed.")
 		return nil
 	} else if err != nil {
 		return err // one or more file uploads failed
 	} else {
 		log.Println("[INFO] Uploading updated manifest file:", manifestPath)
 		payload := manifestFile.Bytes()
+		md5sum := md5.Sum(payload)
 		contents := storage.NewReader(payload)
-		request := storage.PutRequest{Path: manifestPath, Contents: contents, Length: uint64(len(payload))}
+		request := storage.PutRequest{
+			Path:     manifestPath,
+			MD5:      md5sum[:],
+			Contents: contents,
+			Length:   uint64(len(payload)),
+		}
 		return this.remote.Put(request).Error
 	}
 }
@@ -62,7 +69,7 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 		if added, err := manifestFile.Add(pkg); err != nil {
 			return err // problem adding the file to the manifest, e.g. integrity or permissions errors, etc.
 		} else if !added {
-			log.Printf("[INFO] The file '%s' is already contained in the manifest--SKIPPING.\n", pkg.Name())
+			log.Printf("[INFO] The package '%s_%s' (with associated files) already exists in the manifest, skipping.\n", pkg.Name(), pkg.Architecture())
 		} else {
 			for _, file := range pkg.Files() {
 				targetPath := path.Join("/", manifestFile.Path(), file.Name)

@@ -50,6 +50,7 @@ func (this *ConcurrentStorage) alreadyExists(request PutRequest) bool {
 	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
 		return false // doesn't exist or some other kind error
 	} else if !bytes.Equal(request.MD5, response.MD5) {
+		log.Println("[INFO] Remote file exists, but contents have changed:", request.Path)
 		return false // same = already exists
 	} else {
 		log.Println("[INFO] Skipping remote file which already exists:", request.Path)
