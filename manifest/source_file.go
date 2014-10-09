@@ -122,7 +122,8 @@ func parseFileLine(value string) (string, string) {
 	}
 }
 func (this *SourceFile) ToManifest(poolDirectory string) (*Paragraph, error) {
-	if clone := this.paragraph.CloneWithoutFiles(); !clone.RenameKey("Source", "Package") {
+
+	if clone := this.cloneWithoutFiles(); !clone.RenameKey("Source", "Package") {
 		return nil, errors.New("Unable to rename desired key")
 	} else if !addLine(clone, "Directory", poolDirectory) {
 		return nil, errors.New("Unable to add a line to the debian control file")
@@ -151,6 +152,28 @@ func addLine(meta *Paragraph, key, value string) bool {
 	} else {
 		return true
 	}
+}
+func (this *SourceFile) cloneWithoutFiles() *Paragraph {
+	clone := NewParagraph()
+	skip := false
+	checksumPrefix := normalizeKey("Checksums-")
+	filesKey := normalizeKey("Files")
+
+	for _, item := range this.paragraph.items {
+		if skip && len(item.Key) == 0 {
+			continue // skip any value-only lines when we're in skip mode
+		} else if skip = item.Key == filesKey; skip {
+			continue // skip the "Files:" section
+		} else if skip = strings.HasPrefix(item.Key, checksumPrefix); skip {
+			continue // skip the "Checksum-*" section
+		}
+
+		clone.allKeys[item.Key] = item
+		clone.items = append(clone.items, item)
+		clone.orderedKeys = append(clone.orderedKeys, item.Key)
+	}
+
+	return clone
 }
 
 func (this *SourceFile) Name() string              { return this.name }

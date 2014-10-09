@@ -3,27 +3,25 @@ package main
 import (
 	"fmt"
 
-	"github.com/smartystreets/raptr/cli"
-	"github.com/smartystreets/raptr/config"
-	"github.com/smartystreets/raptr/messages"
+	"github.com/smartystreets/raptr/manifest"
 )
 
 func main() {
-	command, configFile := cli.ReadMessage()
-	configuration, _ := config.LoadConfiguration(configFile)
-	fmt.Println("Configuration:", configuration)
+	directory := "/Users/jonathan/Downloads/tmp"
+	finder := manifest.NewLocalPackageFinder()
 
-	switch command.(type) {
-	case messages.UploadCommand:
-		fmt.Println("Upload...", command)
-	case messages.LinkCommand:
-		fmt.Println("Link...", command)
-	case messages.UnlinkCommand:
-		fmt.Println("Unlink...", command)
-	case messages.CleanCommand:
-		fmt.Println("Clean...", command)
-	default:
-		fmt.Printf("Unknown command\n")
+	manifestFile := manifest.NewManifestFile("public", "nginx", "1.7.4-1")
+	if files, err := finder.Find(directory); err != nil {
+		fmt.Println(err)
+	} else {
+		for _, file := range files {
+			if success, err := manifestFile.Add(file); err != nil {
+				fmt.Println(err)
+			} else if !success {
+				fmt.Println("failed")
+			}
+		}
 	}
 
+	fmt.Print(string(manifestFile.Bytes()))
 }

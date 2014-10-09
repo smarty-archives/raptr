@@ -128,26 +128,3 @@ func (this *Paragraph) Write(writer *Writer) error {
 
 	return writer.Write(&LineItem{Type: separator})
 }
-
-func (this *Paragraph) CloneWithoutFiles() *Paragraph {
-	clone := NewParagraph()
-	skip := false
-	checksumPrefix := normalizeKey("Checksums-")
-	filesKey := normalizeKey("Files")
-
-	for _, item := range this.items {
-		if skip && len(item.Key) == 0 {
-			continue // skip any value-only lines when we're in skip mode
-		} else if skip = item.Key == filesKey; skip {
-			continue // skip the "Files:" section
-		} else if skip = strings.HasPrefix(item.Key, checksumPrefix); skip {
-			continue // skip the "Checksum-*" section
-		}
-
-		clone.allKeys[item.Key] = item
-		clone.items = append(clone.items, item)
-		clone.orderedKeys = append(clone.orderedKeys, item.Key)
-	}
-
-	return clone
-}
