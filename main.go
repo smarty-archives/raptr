@@ -3,25 +3,24 @@ package main
 import (
 	"fmt"
 
+	"github.com/smartystreets/raptr/config"
 	"github.com/smartystreets/raptr/manifest"
+	"github.com/smartystreets/raptr/tasks"
 )
 
 func main() {
-	directory := "/Users/jonathan/Downloads/tmp"
-	finder := manifest.NewLocalPackageFinder()
+	configuration, _ := config.LoadConfiguration("raptr.conf")
+	repo, _ := configuration.Open("repo-1")
 
-	manifestFile := manifest.NewManifestFile("public", "nginx", "1.7.4-1")
+	directory := "/home/vagrant/nginx"
+	finder := manifest.NewLocalPackageFinder()
+	task := tasks.NewUploadTask(repo.Storage)
+
 	if files, err := finder.Find(directory); err != nil {
 		fmt.Println(err)
+	} else if err := task.Upload("public", "nginx", "1.1.6", files); err != nil {
+		fmt.Println(err)
 	} else {
-		for _, file := range files {
-			if success, err := manifestFile.Add(file); err != nil {
-				fmt.Println(err)
-			} else if !success {
-				fmt.Println("failed")
-			}
-		}
+		fmt.Println("Success!")
 	}
-
-	fmt.Print(string(manifestFile.Bytes()))
 }
