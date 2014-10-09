@@ -111,7 +111,7 @@ func normalizeKey(key string) string {
 	} else if key == "sha512sum" {
 		return "SHA512Sum"
 	} else {
-		return strings.ToTitle(key) // TODO: fix this
+		return strings.Title(key)
 	}
 }
 

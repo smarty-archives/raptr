@@ -62,40 +62,13 @@ func (this *ManifestFile) Add(pkg LocalPackage) (bool, error) {
 		return false, errors.New("Only a single Debian source package is allowed per manifest.")
 	} else if this.contains(pkg) {
 		return false, nil
-	}
-
-	id := formatPackageID(pkg.Name(), pkg.Architecture())
-	this.packages[id] = struct{}{}
-
-	meta := pkg.Metadata()
-	if pkg.Architecture() == "source" {
-		this.addSourcePackage(&meta, pkg.Files())
+	} else if meta, err := pkg.ToManifest(); err != nil {
+		return false, err
 	} else {
-		// TODO: transform the paragraph and append it to the list
+		this.packages[formatPackageID(pkg.Name(), pkg.Architecture())] = struct{}{}
+		this.paragraphs = append(this.paragraphs, meta)
+		return true, nil
 	}
-
-	this.paragraphs = append(this.paragraphs, &meta)
-
-	return true, nil
-}
-func (this *ManifestFile) addSourcePackage(meta *Paragraph, files []LocalPackageFile) {
-	meta.RenameKey("Source", "Package")
-
-	addLine(meta, "Directory", this.Path())
-
-	// addLine(meta, "Checksums-Sha1", this.Path())
-	// for _, file := range files {
-	// 	addLine(meta, "", fmt.Sprintf("%x %d %s", file.Checksums.SHA1, file.Length, file.Name))
-	// }
-
-	// addLine(meta, "Checksums-Sha256", this.Path())
-	// for _, file := range files {
-	// 	addLine(meta, "", fmt.Sprintf("%x %d %s", file.Checksums.SHA256, file.Length, file.Name))
-	// }
-}
-func addLine(meta *Paragraph, key, value string) {
-	line, _ := NewLine(key, value)
-	meta.Add(line, false)
 }
 
 func (this *ManifestFile) contains(pkg LocalPackage) bool {

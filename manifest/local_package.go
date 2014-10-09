@@ -6,8 +6,8 @@ type LocalPackage interface {
 	Name() string
 	Version() string
 	Architecture() string
-	Metadata() Paragraph
 	Files() []LocalPackageFile
+	ToManifest() (*Paragraph, error)
 }
 
 type LocalPackageFile struct {

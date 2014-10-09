@@ -120,8 +120,11 @@ func parseFileLine(value string) (string, string) {
 	}
 }
 
+func (this *SourceFile) ToManifest() (*Paragraph, error) {
+	return this.paragraph, nil
+}
+
 func (this *SourceFile) Name() string              { return this.name }
 func (this *SourceFile) Version() string           { return this.version }
 func (this *SourceFile) Architecture() string      { return "source" }
-func (this *SourceFile) Metadata() Paragraph       { return *this.paragraph }
 func (this *SourceFile) Files() []LocalPackageFile { return this.files }
