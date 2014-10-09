@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/smartystreets/go-aws-auth"
 )
-import "github.com/smartystreets/go-aws-auth"
 
 type S3Storage struct {
 	hostname    string
@@ -102,9 +103,9 @@ func (this *S3Storage) Put(operation PutRequest) PutResponse {
 	request.ContentLength = int64(operation.Length)
 	request.Header.Set("Content-Type", "binary/octet-stream")
 	request.Header.Set("Content-Disposition", "attachment")
-	if len(operation.MD5) > 0 {
-		request.Header.Set("Content-MD5", hex.EncodeToString(operation.MD5))
-	}
+	// if len(operation.MD5) > 0 {
+	// 	request.Header.Set("Content-MD5", hex.EncodeToString(operation.MD5))
+	// }
 	_, err := this.executeRequest(request)
 	return PutResponse{Path: operation.Path, Error: err}
 }

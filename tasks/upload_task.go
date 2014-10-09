@@ -61,6 +61,7 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 					Path:     path.Join("/", manifestFile.Path(), file.Name),
 					Contents: file.Contents,
 					MD5:      file.Checksums.MD5,
+					Length:   file.Length,
 				})
 			}
 		}

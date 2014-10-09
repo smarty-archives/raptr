@@ -1,6 +1,9 @@
 package storage
 
-import "bytes"
+import (
+	"bytes"
+	"log"
+)
 
 // Ensures that multiple writers (different processes or different machines)
 // can be aware of each other to allow reconciliation of potentially conflicting changes.
@@ -46,8 +49,11 @@ func (this *ConcurrentStorage) alreadyExists(request PutRequest) bool {
 		return false // no MD5 to help perform a conditional put
 	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
 		return false // doesn't exist or some other kind error
+	} else if !bytes.Equal(request.MD5, response.MD5) {
+		return false // same = already exists
 	} else {
-		return bytes.Equal(request.MD5, response.MD5) // same = already exists
+		log.Println("[INFO] Skipping remote file which already exists:", request.Path)
+		return true
 	}
 }
 
