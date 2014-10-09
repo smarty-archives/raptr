@@ -39,6 +39,10 @@ func ParseManifest(reader io.Reader, category, bundle, version string) (*Manifes
 			return nil, errors.New("Malformed manifest file, missing Package element.")
 		} else if architecture, contains := paragraph.allKeys["Architecture"]; !contains {
 			return nil, errors.New("Malformed manifest file, missing Architecture element.")
+		} else if pkgVersion, contains := paragraph.allKeys["Version"]; !contains {
+			return nil, errors.New("Malformed manifest file, missing Version element.")
+		} else if version != pkgVersion.Value {
+			return nil, errors.New("The package version differs from the provided manifest version.")
 		} else if _, contains := paragraph.allKeys["Files"]; contains {
 			this.packages[formatPackageID(packageName.Value, "source")] = struct{}{}
 			this.paragraphs = append(this.paragraphs, paragraph)
@@ -55,11 +59,13 @@ func BuildPath(category, bundle, version string) string {
 }
 
 func (this *ManifestFile) Path() string {
-	return path.Dir(BuildPath(this.category, this.bundle, this.version))
+	return path.Dir(BuildPath(this.category, this.bundle, this.version))[1:]
 }
 func (this *ManifestFile) Add(pkg LocalPackage) (bool, error) {
 	if this.hasDSC && pkg.Architecture() == "source" {
 		return false, errors.New("Only a single Debian source package is allowed per manifest.")
+	} else if pkg.Version() != this.version {
+		return false, errors.New("The package to be added does not match the manifest version.")
 	} else if this.contains(pkg) {
 		return false, nil
 	} else if clone, err := pkg.ToManifest(this.Path()); err != nil {
