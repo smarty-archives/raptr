@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"errors"
 	"log"
 	"os"
 	"path"
@@ -28,7 +29,10 @@ func (this *UploadTask) Upload(category, bundle, version string, packages []mani
 	manifestResponse := this.remote.Get(storage.GetRequest{Path: manifestPath})
 	if manifestFile, err := parseManifestResponse(manifestResponse, category, bundle, version); err != nil {
 		return err // unable to access or parse remote manifest
-	} else if err := this.uploadPackages(packages, manifestFile); err != nil {
+	} else if err := this.uploadPackages(packages, manifestFile); err == noUploadedFilesError {
+		log.Println("[INFO] No files uploaded, skipped uploading manifest")
+		return nil
+	} else if err != nil {
 		return err // one or more file uploads failed
 	} else {
 		log.Println("[INFO] Uploading updated manifest file:", manifestPath)
@@ -75,5 +79,11 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 		}
 	}
 
-	return nil
+	if len(puts) > 0 {
+		return nil
+	} else {
+		return noUploadedFilesError
+	}
 }
+
+var noUploadedFilesError = errors.New("No files have changed")
