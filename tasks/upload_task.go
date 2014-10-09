@@ -42,7 +42,7 @@ func parseManifestResponse(response storage.GetResponse, category, bundle, versi
 		return manifest.NewManifestFile(category, bundle, version), nil
 	} else if response.Error != nil {
 		return nil, response.Error
-	} else if parsed, err := manifest.ParseManifest(response.Contents); err != nil {
+	} else if parsed, err := manifest.ParseManifest(response.Contents, category, bundle, version); err != nil {
 		return nil, err
 	} else {
 		return parsed, nil

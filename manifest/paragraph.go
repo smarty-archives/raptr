@@ -28,6 +28,8 @@ func ReadParagraph(reader *Reader) (*Paragraph, error) {
 			break
 		} else if err != nil {
 			return nil, err
+		} else if item.Type == separator && len(this.items) == 0 {
+			continue // keep reading until we find something
 		} else if item.Type == separator {
 			break
 		} else if err := this.Add(item, false); err != nil {
