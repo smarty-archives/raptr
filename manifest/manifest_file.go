@@ -59,7 +59,7 @@ func BuildPath(category, bundle, version string) string {
 }
 
 func (this *ManifestFile) Path() string {
-	return path.Dir(BuildPath(this.category, this.bundle, this.version))[1:]
+	return path.Dir(BuildPath(this.category, this.bundle, this.version))
 }
 func (this *ManifestFile) Add(pkg LocalPackage) (bool, error) {
 	if this.hasDSC && pkg.Architecture() == "source" {

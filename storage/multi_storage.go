@@ -20,10 +20,10 @@ func (this *MultiStorage) Put(requests ...PutRequest) []PutResponse {
 	responses := make([]PutResponse, len(requests))
 
 	for i, request := range requests {
-		go func() {
-			responses[i] = this.inner.Put(request)
+		go func(index int, actual PutRequest) {
+			responses[index] = this.inner.Put(actual)
 			waiter.Done()
-		}()
+		}(i, request)
 	}
 
 	waiter.Wait()
@@ -35,10 +35,10 @@ func (this *MultiStorage) Get(requests ...GetRequest) []GetResponse {
 	responses := make([]GetResponse, len(requests))
 
 	for i, request := range requests {
-		go func() {
-			responses[i] = this.inner.Get(request)
+		go func(index int, actual GetRequest) {
+			responses[index] = this.inner.Get(actual)
 			waiter.Done()
-		}()
+		}(i, request)
 	}
 
 	waiter.Wait()
@@ -50,10 +50,10 @@ func (this *MultiStorage) Delete(requests ...DeleteRequest) []DeleteResponse {
 	responses := make([]DeleteResponse, len(requests))
 
 	for i, request := range requests {
-		go func() {
-			responses[i] = this.inner.Delete(request)
+		go func(index int, actual DeleteRequest) {
+			responses[index] = this.inner.Delete(actual)
 			waiter.Done()
-		}()
+		}(i, request)
 	}
 
 	waiter.Wait()
@@ -65,10 +65,10 @@ func (this *MultiStorage) Head(requests ...HeadRequest) []HeadResponse {
 	responses := make([]HeadResponse, len(requests))
 
 	for i, request := range requests {
-		go func() {
-			responses[i] = this.inner.Head(request)
+		go func(index int, actual HeadRequest) {
+			responses[index] = this.inner.Head(actual)
 			waiter.Done()
-		}()
+		}(i, request)
 	}
 
 	waiter.Wait()
@@ -80,10 +80,10 @@ func (this *MultiStorage) List(requests ...ListRequest) []ListResponse {
 	responses := make([]ListResponse, len(requests))
 
 	for i, request := range requests {
-		go func() {
-			responses[i] = this.inner.List(request)
+		go func(index int, actual ListRequest) {
+			responses[index] = this.inner.List(actual)
 			waiter.Done()
-		}()
+		}(i, request)
 	}
 
 	waiter.Wait()

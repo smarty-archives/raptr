@@ -10,13 +10,12 @@ import (
 )
 
 type UploadTask struct {
-	local  storage.Storage
 	remote storage.Storage
 	multi  *storage.MultiStorage
 }
 
-func NewUploadTask(local, remote storage.Storage) *UploadTask {
-	return &UploadTask{local: local, remote: remote, multi: storage.NewMultiStorage(remote)}
+func NewUploadTask(remote storage.Storage) *UploadTask {
+	return &UploadTask{remote: remote, multi: storage.NewMultiStorage(remote)}
 }
 
 // the list of files to upload along with integrity checks, etc.
@@ -59,9 +58,9 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 		} else {
 			for _, file := range pkg.Files() {
 				puts = append(puts, storage.PutRequest{
-					Path:     path.Join(manifestFile.Path(), file.Name),
+					Path:     path.Join("/", manifestFile.Path(), file.Name),
 					Contents: file.Contents,
-					MD5:      file.MD5,
+					MD5:      file.Checksums.MD5,
 				})
 			}
 		}

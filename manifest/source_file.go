@@ -125,7 +125,7 @@ func (this *SourceFile) ToManifest(poolDirectory string) (*Paragraph, error) {
 
 	if clone := this.cloneWithoutFiles(); !clone.RenameKey("Source", "Package") {
 		return nil, errors.New("Unable to rename desired key")
-	} else if !addLine(clone, "Directory", poolDirectory) {
+	} else if !addLine(clone, "Directory", poolDirectory[1:]) {
 		return nil, errors.New("Unable to add a line to the debian control file")
 	} else {
 		addLine(clone, "Checksums-Sha1", "")
