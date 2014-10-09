@@ -1,9 +1,7 @@
 package manifest
 
 import (
-	"crypto/md5"
 	"errors"
-	"io"
 	"os"
 	"path"
 	"strings"
@@ -23,7 +21,10 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 		return nil, errors.New("The file provided is not a debian binary package.")
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
-	} else if computed, err := computeMD5(handle); err != nil {
+	} else if computed, err := ComputeChecksums(handle); err != nil {
+		handle.Close()
+		return nil, err
+	} else if _, err := handle.Seek(0, 0); err != nil {
 		handle.Close()
 		return nil, err
 	} else {
@@ -33,23 +34,11 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 			version:      meta.Version,
 			architecture: meta.Architecture,
 			file: LocalPackageFile{
-				Name:     strings.ToLower(path.Base(fullPath)),
-				Contents: handle,
-				MD5:      computed,
+				Name:      strings.ToLower(path.Base(fullPath)),
+				Contents:  handle,
+				Checksums: computed,
 			},
 		}, nil
-	}
-}
-func computeMD5(contents io.ReadSeeker) ([]byte, error) {
-	hasher := md5.New()
-	if _, err := contents.Seek(0, 0); err != nil {
-		return nil, err // unable to seek to beginning
-	} else if _, err := io.Copy(hasher, contents); err != nil {
-		return nil, err
-	} else if _, err := contents.Seek(0, 0); err != nil {
-		return nil, err // unable to rewind the stream again
-	} else {
-		return hasher.Sum(nil), nil
 	}
 }
 

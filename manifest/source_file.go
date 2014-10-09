@@ -23,21 +23,29 @@ func NewSourceFile(fullPath string) (*SourceFile, error) {
 		return nil, errors.New("The file provided is not a debian binary package.")
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
-	} else if computed, err := computeMD5(handle); err != nil {
-		return nil, err
-	} else if paragraph, err := ReadParagraph(NewReader(handle)); err != nil {
+	} else if computed, err := ComputeChecksums(handle); err != nil {
+		handle.Close()
 		return nil, err
 	} else if _, err := handle.Seek(0, 0); err != nil {
+		handle.Close()
+		return nil, err
+	} else if paragraph, err := ReadParagraph(NewReader(handle)); err != nil {
+		handle.Close()
+		return nil, err
+	} else if _, err := handle.Seek(0, 0); err != nil {
+		handle.Close()
 		return nil, err
 	} else if files, err := readSourcePackageFiles(fullPath, paragraph); err != nil {
+		handle.Close()
 		return nil, err
 	} else if len(files) == 0 {
+		handle.Close()
 		return nil, errors.New("Debian source code packages does not contain any files.")
 	} else {
 		file := LocalPackageFile{
-			Name:     strings.ToLower(path.Base(fullPath)),
-			Contents: handle,
-			MD5:      computed,
+			Name:      strings.ToLower(path.Base(fullPath)),
+			Contents:  handle,
+			Checksums: computed,
 		}
 		files = append([]LocalPackageFile{file}, files...)
 
@@ -60,10 +68,10 @@ func readSourcePackageFiles(fullPath string, paragraph *Paragraph) ([]LocalPacka
 			return nil, err
 		} else if handle, err := os.Open(path.Join(path.Dir(fullPath), filename)); err != nil {
 			return nil, err
-		} else if computed, err := computeMD5(handle); err != nil {
+		} else if computed, err := ComputeChecksums(handle); err != nil {
 			handle.Close()
 			return nil, err
-		} else if bytes.Compare(computed, parsedMD5) != 0 {
+		} else if bytes.Compare(computed.MD5, parsedMD5) != 0 {
 			handle.Close()
 			return nil, errors.New("File contents do not match line item in dsc file.")
 		} else if _, err := handle.Seek(0, 0); err != nil {
@@ -71,9 +79,9 @@ func readSourcePackageFiles(fullPath string, paragraph *Paragraph) ([]LocalPacka
 			return nil, err
 		} else {
 			files = append(files, LocalPackageFile{
-				Name:     filename,
-				MD5:      computed,
-				Contents: handle,
+				Name:      filename,
+				Checksums: computed,
+				Contents:  handle,
 			})
 		}
 	}

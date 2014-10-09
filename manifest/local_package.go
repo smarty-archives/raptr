@@ -6,12 +6,12 @@ type LocalPackage interface {
 	Name() string
 	Version() string
 	Architecture() string
-	// Metadata() Paragraph // TODO
+	// Metadata() Paragraph
 	Files() []LocalPackageFile
 }
 
 type LocalPackageFile struct {
-	Name     string
-	MD5      []byte
-	Contents storage.ReadSeekCloser
+	Name      string
+	Checksums Checksum
+	Contents  storage.ReadSeekCloser
 }
