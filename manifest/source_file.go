@@ -45,6 +45,7 @@ func NewSourceFile(fullPath string) (*SourceFile, error) {
 		handle.Close()
 		return nil, errors.New("Debian source code packages does not contain any files.")
 	} else {
+		// TODO: ensure that contents of file agree with filename scheme
 		file := LocalPackageFile{
 			Name:      strings.ToLower(path.Base(fullPath)),
 			Length:    uint64(info.Size()),
