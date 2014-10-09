@@ -29,12 +29,13 @@ func NewManifestFile(category, bundle, version string) *ManifestFile {
 }
 func ParseManifest(reader io.Reader, category, bundle, version string) (*ManifestFile, error) {
 	this := NewManifestFile(category, bundle, version)
+	paragraphReader := NewReader(reader)
 
 	for {
-		if paragraph, err := ReadParagraph(NewReader(reader)); err != nil {
-			return nil, err
-		} else if err == io.EOF {
+		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {
 			break
+		} else if err != nil {
+			return nil, err
 		} else if packageName, contains := paragraph.allKeys["Package"]; !contains {
 			return nil, errors.New("Malformed manifest file, missing Package element.")
 		} else if architecture, contains := paragraph.allKeys["Architecture"]; !contains {

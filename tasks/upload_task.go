@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path"
@@ -25,13 +24,14 @@ func NewUploadTask(remote storage.Storage) *UploadTask {
 // won't cause the validation to be re-run
 func (this *UploadTask) Upload(category, bundle, version string, packages []manifest.LocalPackage) error {
 	manifestPath := manifest.BuildPath(category, bundle, version)
+	log.Println("[INFO] Downloading manifest from", manifestPath)
 	manifestResponse := this.remote.Get(storage.GetRequest{Path: manifestPath})
 	if manifestFile, err := parseManifestResponse(manifestResponse, category, bundle, version); err != nil {
 		return err // unable to access or parse remote manifest
 	} else if err := this.uploadPackages(packages, manifestFile); err != nil {
 		return err // one or more file uploads failed
 	} else {
-		log.Println("Uploading manifest file:", manifestPath)
+		log.Println("[INFO] Uploading updated manifest file:", manifestPath)
 		payload := manifestFile.Bytes()
 		contents := storage.NewReader(payload)
 		request := storage.PutRequest{Path: manifestPath, Contents: contents, Length: uint64(len(payload))}
@@ -41,14 +41,13 @@ func (this *UploadTask) Upload(category, bundle, version string, packages []mani
 
 func parseManifestResponse(response storage.GetResponse, category, bundle, version string) (*manifest.ManifestFile, error) {
 	if response.Error != nil && os.IsNotExist(response.Error) {
-		fmt.Println("Creating a new manifest")
 		return manifest.NewManifestFile(category, bundle, version), nil
 	} else if response.Error != nil {
 		return nil, response.Error
 	} else if parsed, err := manifest.ParseManifest(response.Contents, category, bundle, version); err != nil {
 		return nil, err
 	} else {
-		fmt.Println("Parsed an existing manifest")
+		log.Println("[INFO] Parsed manifest")
 		return parsed, nil
 	}
 }

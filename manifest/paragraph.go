@@ -24,8 +24,8 @@ func ReadParagraph(reader *Reader) (*Paragraph, error) {
 	this := NewParagraph()
 
 	for {
-		if item, err := reader.Read(); err == io.EOF {
-			break
+		if item, err := reader.Read(); len(this.items) > 0 && err == io.EOF {
+			return this, nil
 		} else if err != nil {
 			return nil, err
 		} else if item.Type == separator && len(this.items) == 0 {
