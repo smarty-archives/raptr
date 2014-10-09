@@ -6,7 +6,7 @@ type LocalPackage interface {
 	Name() string
 	Version() string
 	Architecture() string
-	// Metadata() Paragraph
+	Metadata() Paragraph
 	Files() []LocalPackageFile
 }
 

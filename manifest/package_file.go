@@ -13,6 +13,7 @@ type PackageFile struct {
 	name         string
 	version      string
 	architecture string
+	paragraph    *Paragraph
 	file         LocalPackageFile
 }
 
@@ -31,10 +32,12 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 		return nil, err
 	} else {
 		// TODO: *open* the debian file and read the manifest/control file
+		// https://github.com/blakesmith/ar
 		return &PackageFile{
 			name:         meta.Name,
 			version:      meta.Version,
 			architecture: meta.Architecture,
+			paragraph:    &Paragraph{},
 			file: LocalPackageFile{
 				Name:      strings.ToLower(path.Base(fullPath)),
 				Length:    uint64(info.Size()),
@@ -48,4 +51,5 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 func (this *PackageFile) Name() string              { return this.name }
 func (this *PackageFile) Version() string           { return this.version }
 func (this *PackageFile) Architecture() string      { return this.architecture }
+func (this *PackageFile) Metadata() Paragraph       { return *this.paragraph }
 func (this *PackageFile) Files() []LocalPackageFile { return []LocalPackageFile{this.file} }

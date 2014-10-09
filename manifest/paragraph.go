@@ -71,6 +71,32 @@ func (this *Paragraph) Add(item *LineItem, overwrite bool) error {
 
 	return nil
 }
+func (this *Paragraph) RenameKey(oldKey, newKey string) bool {
+	oldKey = normalizeKey(oldKey)
+	newKey = normalizeKey(newKey)
+
+	if len(oldKey) == 0 || len(newKey) == 0 {
+		return false
+	} else if _, contains := this.allKeys[newKey]; contains {
+		return false // can't replace if the new one already exists
+	} else if item, contains := this.allKeys[oldKey]; !contains {
+		return false
+	} else {
+		delete(this.allKeys, oldKey)
+		this.allKeys[newKey] = item
+		item.Key = newKey
+
+		for i, item := range this.orderedKeys {
+			if item == oldKey {
+				this.orderedKeys[i] = newKey
+				break
+			}
+		}
+
+		return true
+	}
+}
+
 func normalizeKey(key string) string {
 	if len(key) == 0 {
 		return key
@@ -85,7 +111,7 @@ func normalizeKey(key string) string {
 	} else if key == "sha512sum" {
 		return "SHA512Sum"
 	} else {
-		return strings.ToTitle(key)
+		return strings.ToTitle(key) // TODO: fix this
 	}
 }
 
