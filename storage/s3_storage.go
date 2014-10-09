@@ -100,9 +100,10 @@ func (this *S3Storage) Get(operation GetRequest) GetResponse {
 
 func (this *S3Storage) Put(operation PutRequest) PutResponse {
 	request := this.newRequest("PUT", operation.Path, operation.Contents)
-	request.ContentLength = int64(operation.Length)
+	request.ContentLength = int64(operation.Length) // TODO: when this is zero (empty files) the request uses "Transfer-Encoding: Chunked"?!
 	request.Header.Set("Content-Type", "binary/octet-stream")
 	request.Header.Set("Content-Disposition", "attachment")
+	// TODO: awsauth doesn't handle this header properly?
 	// if len(operation.MD5) > 0 {
 	// 	request.Header.Set("Content-MD5", hex.EncodeToString(operation.MD5))
 	// }

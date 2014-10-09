@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -30,20 +31,24 @@ func (this *UploadTask) Upload(category, bundle, version string, packages []mani
 	} else if err := this.uploadPackages(packages, manifestFile); err != nil {
 		return err // one or more file uploads failed
 	} else {
-		contents := storage.NewReader(manifestFile.Bytes())
-		request := storage.PutRequest{Path: manifestPath, Contents: contents}
+		log.Println("Uploading manifest file:", manifestPath)
+		payload := manifestFile.Bytes()
+		contents := storage.NewReader(payload)
+		request := storage.PutRequest{Path: manifestPath, Contents: contents, Length: uint64(len(payload))}
 		return this.remote.Put(request).Error
 	}
 }
 
 func parseManifestResponse(response storage.GetResponse, category, bundle, version string) (*manifest.ManifestFile, error) {
 	if response.Error != nil && os.IsNotExist(response.Error) {
+		fmt.Println("Creating a new manifest")
 		return manifest.NewManifestFile(category, bundle, version), nil
 	} else if response.Error != nil {
 		return nil, response.Error
 	} else if parsed, err := manifest.ParseManifest(response.Contents, category, bundle, version); err != nil {
 		return nil, err
 	} else {
+		fmt.Println("Parsed an existing manifest")
 		return parsed, nil
 	}
 }
@@ -57,12 +62,10 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 			log.Printf("[INFO] The file '%s' is already contained in the manifest--SKIPPING.\n", pkg.Name())
 		} else {
 			for _, file := range pkg.Files() {
-				puts = append(puts, storage.PutRequest{
-					Path:     path.Join("/", manifestFile.Path(), file.Name),
-					Contents: file.Contents,
-					MD5:      file.Checksums.MD5,
-					Length:   file.Length,
-				})
+				targetPath := path.Join("/", manifestFile.Path(), file.Name)
+				request := storage.PutRequest{Path: targetPath, Contents: file.Contents, MD5: file.Checksums.MD5, Length: file.Length}
+				puts = append(puts, request)
+				log.Println("Uploading local file to", request.Path)
 			}
 		}
 	}
