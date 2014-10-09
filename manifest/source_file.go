@@ -97,7 +97,7 @@ func getSourcePackageFilenameLineValues(paragraph *Paragraph) []string {
 }
 func parseFileLine(value string) (string, string) {
 	split := strings.Split(value, " ")
-	if len(split) > 2 {
+	if len(split) < 2 {
 		return "", ""
 	} else {
 		return split[0], split[len(split)-1]

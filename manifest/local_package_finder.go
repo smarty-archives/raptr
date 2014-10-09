@@ -5,14 +5,11 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
-
-	"github.com/smartystreets/raptr/storage"
 )
 
-type LocalPackageFinder struct {
-}
+type LocalPackageFinder struct{}
 
-func NewLocalPackageFinder(local storage.Storage) *LocalPackageFinder {
+func NewLocalPackageFinder() *LocalPackageFinder {
 	return &LocalPackageFinder{}
 }
 
@@ -25,7 +22,9 @@ func (this *LocalPackageFinder) Find(directory string) ([]LocalPackage, error) {
 	} else {
 		for _, file := range files {
 			fullPath := path.Join(directory, file.Name())
-			if localPackage, err := buildLocalPackage(fullPath); err != nil {
+			if file.IsDir() {
+				continue
+			} else if localPackage, err := buildLocalPackage(fullPath); err != nil {
 				return nil, err
 			} else if localPackage == nil {
 				continue
@@ -42,9 +41,9 @@ func (this *LocalPackageFinder) Find(directory string) ([]LocalPackage, error) {
 }
 func buildLocalPackage(fullPath string) (LocalPackage, error) {
 	switch strings.ToLower(path.Ext(fullPath)) {
-	case "deb":
+	case ".deb":
 		return NewPackageFile(fullPath)
-	case "dsc":
+	case ".dsc":
 		return NewSourceFile(fullPath)
 	default:
 		return nil, nil
