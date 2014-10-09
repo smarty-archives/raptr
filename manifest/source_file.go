@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -119,9 +120,36 @@ func parseFileLine(value string) (string, string) {
 		return split[0], split[len(split)-1]
 	}
 }
+func (this *SourceFile) ToManifest(poolDirectory string) (*Paragraph, error) {
+	if clone := this.paragraph.CloneWithoutFiles(); !clone.RenameKey("Source", "Package") {
+		return nil, errors.New("Unable to rename desired key")
+	} else if !addLine(clone, "Directory", poolDirectory) {
+		return nil, errors.New("Unable to add a line to the debian control file")
+	} else {
+		addLine(clone, "Checksums-Sha1", "")
+		for _, file := range this.Files() {
+			addLine(clone, "", fmt.Sprintf("%x %d %s", file.Checksums.SHA1, file.Length, file.Name))
+		}
+		addLine(clone, "Checksums-Sha256", "")
+		for _, file := range this.Files() {
+			addLine(clone, "", fmt.Sprintf("%x %d %s", file.Checksums.SHA256, file.Length, file.Name))
+		}
+		addLine(clone, "Files", "")
+		for _, file := range this.Files() {
+			addLine(clone, "", fmt.Sprintf("%x %d %s", file.Checksums.MD5, file.Length, file.Name))
+		}
 
-func (this *SourceFile) ToManifest() (*Paragraph, error) {
-	return this.paragraph, nil
+		return clone, nil
+	}
+}
+func addLine(meta *Paragraph, key, value string) bool {
+	if line, err := NewLine(key, value); err != nil {
+		return false
+	} else if err := meta.Add(line, false); err != nil {
+		return false
+	} else {
+		return true
+	}
 }
 
 func (this *SourceFile) Name() string              { return this.name }

@@ -46,7 +46,7 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 	}
 }
 
-func (this *PackageFile) ToManifest() (*Paragraph, error) {
+func (this *PackageFile) ToManifest(poolDirectory string) (*Paragraph, error) {
 	return NewParagraph(), nil
 }
 

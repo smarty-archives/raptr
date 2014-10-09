@@ -62,11 +62,11 @@ func (this *ManifestFile) Add(pkg LocalPackage) (bool, error) {
 		return false, errors.New("Only a single Debian source package is allowed per manifest.")
 	} else if this.contains(pkg) {
 		return false, nil
-	} else if meta, err := pkg.ToManifest(); err != nil {
+	} else if clone, err := pkg.ToManifest(this.Path()); err != nil {
 		return false, err
 	} else {
 		this.packages[formatPackageID(pkg.Name(), pkg.Architecture())] = struct{}{}
-		this.paragraphs = append(this.paragraphs, meta)
+		this.paragraphs = append(this.paragraphs, clone)
 		return true, nil
 	}
 }
@@ -92,9 +92,7 @@ func (this *ManifestFile) Bytes() []byte {
 	buffer := bytes.NewBuffer([]byte{})
 	writer := NewWriter(buffer)
 	for _, meta := range this.paragraphs {
-		for _, item := range meta.items {
-			writer.Write(item)
-		}
+		meta.Write(writer)
 	}
 
 	return buffer.Bytes()

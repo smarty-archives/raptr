@@ -7,7 +7,7 @@ type LocalPackage interface {
 	Version() string
 	Architecture() string
 	Files() []LocalPackageFile
-	ToManifest() (*Paragraph, error)
+	ToManifest(poolDirectory string) (*Paragraph, error)
 }
 
 type LocalPackageFile struct {
