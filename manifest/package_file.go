@@ -88,19 +88,34 @@ func extractManifest(reader io.Reader) (*Paragraph, error) {
 
 func (this *PackageFile) ToManifest(poolDirectory string) (*Paragraph, error) {
 	clone := NewParagraph()
+	added := false
 
 	for _, item := range this.paragraph.items {
-		addLine(clone, item.Key, item.Value)
-		if item.Key == "Depends" {
-			addLine(clone, "Filename", path.Join(poolDirectory, this.file.Name))
-			addLine(clone, "Size", fmt.Sprintf("%d", this.file.Length))
-			addLine(clone, "MD5sum", fmt.Sprintf("%x", this.file.Checksums.MD5))
-			addLine(clone, "SHA1", fmt.Sprintf("%x", this.file.Checksums.SHA1))
-			addLine(clone, "SHA256", fmt.Sprintf("%x", this.file.Checksums.SHA256))
+		if item.Key == normalizeKey("Depends") {
+			addLine(clone, item.Key, item.Value)
+			this.addChecksumLines(clone, poolDirectory)
+			added = true
+		} else if item.Key == normalizeKey("Section") && !added {
+			this.addChecksumLines(clone, poolDirectory)
+			addLine(clone, item.Key, item.Value)
+			added = true
+		} else if item.Key == normalizeKey("Description") && !added {
+			this.addChecksumLines(clone, poolDirectory)
+			addLine(clone, item.Key, item.Value)
+			added = true
+		} else {
+			addLine(clone, item.Key, item.Value)
 		}
 	}
 
 	return clone, nil
+}
+func (this *PackageFile) addChecksumLines(clone *Paragraph, directory string) {
+	addLine(clone, "Filename", path.Join(directory, this.file.Name))
+	addLine(clone, "Size", fmt.Sprintf("%d", this.file.Length))
+	addLine(clone, "MD5sum", fmt.Sprintf("%x", this.file.Checksums.MD5))
+	addLine(clone, "SHA1", fmt.Sprintf("%x", this.file.Checksums.SHA1))
+	addLine(clone, "SHA256", fmt.Sprintf("%x", this.file.Checksums.SHA256))
 }
 
 func (this *PackageFile) Name() string              { return this.name }
