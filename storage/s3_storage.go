@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -103,7 +104,7 @@ func (this *S3Storage) Put(operation PutRequest) PutResponse {
 	request := this.newRequest("PUT", operation.Path, operation.Contents)
 	request.ContentLength = int64(operation.Length) // TODO: when this is zero (empty files) the request uses "Transfer-Encoding: Chunked"?!
 	request.Header.Set("Content-Type", "binary/octet-stream")
-	request.Header.Set("Content-Disposition", "attachment")
+	request.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, path.Base(operation.Path))) // correct names for wget/curl/etc
 	if len(operation.MD5) > 0 {
 		request.Header.Set("Content-Md5", base64.StdEncoding.EncodeToString(operation.MD5))
 	}
