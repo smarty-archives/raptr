@@ -28,20 +28,6 @@ func NewLine(key, value string) (*LineItem, error) {
 		}, nil
 	}
 }
-func parse(unparsed string) (*LineItem, error) {
-	if len(strings.TrimSpace(unparsed)) == 0 {
-		return NewLine("", "")
-	} else if strings.HasPrefix(unparsed, "#") {
-		return NewLine("", unparsed)
-	} else if strings.HasPrefix(unparsed, " ") || strings.HasPrefix(unparsed, "\t") {
-		return NewLine("", unparsed)
-	} else if colonIndex := strings.Index(unparsed, ":"); colonIndex >= 0 {
-		return NewLine(unparsed[0:colonIndex], unparsed[colonIndex+1:])
-	} else {
-		return nil, errors.New("Malformed input")
-	}
-}
-
 func isValidKey(text string) bool {
 	for i := range text {
 		if text[i] <= 32 || text[i] == 58 || text[i] >= 127 {

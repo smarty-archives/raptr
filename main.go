@@ -57,6 +57,10 @@ func executeUpload(configuration config.Configuration, command messages.UploadCo
 		log.Println("[INFO] No files found; nothing to do.")
 		return nil
 	} else {
+		// TODO: package name could be optional in one of the following scenarios:
+		// 1. we have a DSC file
+		// 2. there's only one package
+		// otherwise, the name would be required.
 		return task.Upload(command.Category, command.PackageName, files)
 	}
 }
