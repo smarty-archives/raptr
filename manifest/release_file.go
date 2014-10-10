@@ -30,7 +30,7 @@ func NewReleaseFile(distribution string, categories, architectures []string) *Re
 		items:         []IndexFile{},
 	}
 }
-func BuildReleaseFilePath(distribution) string {
+func BuildReleaseFilePath(distribution string) string {
 	return path.Join("/", distribution, "Release.gz")
 }
 
