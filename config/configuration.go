@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/smartystreets/go-conf"
 )
@@ -19,19 +20,22 @@ func (this Configuration) Open(repositoryName string) (RepositoryConfig, bool) {
 	return repo, found
 }
 func LoadConfiguration(fullPath string) (Configuration, error) {
-	if deserialized, err := readFile(filepath.Clean(fullPath)); !os.IsNotExist(err) {
+	deserializedFile := configFile{}
+	if deserialized, err := readFile(fullPath); !os.IsNotExist(err) {
 		return deserialized, err // the result wasn't a "file not found" issue
 	} else if reader, err := conf.Read(".raptr", "raptr.conf"); err != nil {
 		return Configuration{}, err // can't find any kind of config file
-	} else if err := json.NewDecoder(reader).Decode(&deserialized); err != nil {
+	} else if err := json.NewDecoder(reader).Decode(&deserializedFile); err != nil {
 		return Configuration{}, err // unable to deserialize
 	} else {
-		return deserialized, nil // success
+		return newConfiguration(deserializedFile)
 	}
 }
 func readFile(fullPath string) (Configuration, error) {
 	deserialized := configFile{}
-	if handle, err := os.Open(fullPath); err != nil {
+	if len(strings.TrimSpace(fullPath)) == 0 {
+		return Configuration{}, os.ErrNotExist
+	} else if handle, err := os.Open(filepath.Clean(fullPath)); err != nil {
 		return Configuration{}, err // file doesn't exist or access problems
 	} else if contents, err := ioutil.ReadAll(handle); err != nil {
 		handle.Close()
