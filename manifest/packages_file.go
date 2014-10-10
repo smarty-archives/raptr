@@ -1,6 +1,9 @@
 package manifest
 
-import "path"
+import (
+	"io"
+	"path"
+)
 
 // Represents a collection of compiled debian binaries that share the same CPU architecture
 // NOTE: we will read and write these files
@@ -41,6 +44,10 @@ func (this *PackagesFile) Add(manifest *ManifestFile) {
 			}
 		}
 	}
+}
+
+func (this *PackagesFile) Parse(reader io.Reader) error {
+	return nil
 }
 
 func (this *PackagesFile) Bytes() []byte {

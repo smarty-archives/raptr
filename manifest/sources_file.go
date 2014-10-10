@@ -1,6 +1,9 @@
 package manifest
 
-import "path"
+import (
+	"io"
+	"path"
+)
 
 // Represents a set of debian source code archives for a given software category
 // NOTE: we will read and write these files
@@ -36,6 +39,10 @@ func (this *SourcesFile) Add(manifest *ManifestFile) {
 			this.paragraphs = append(this.paragraphs, paragraph)
 		}
 	}
+}
+
+func (this *SourcesFile) Parse(reader io.Reader) error {
+	return nil
 }
 
 func (this *SourcesFile) Bytes() []byte {

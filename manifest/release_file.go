@@ -3,6 +3,7 @@ package manifest
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"path"
 	"strings"
 	"time"
@@ -39,6 +40,10 @@ func (this *ReleaseFile) Add(index IndexFile) {
 		this.sums[index.Path()] = index
 		this.items = append(this.items, index)
 	}
+}
+
+func (this *ReleaseFile) Parse(reader io.Reader) error {
+	return nil
 }
 
 func (this *ReleaseFile) Bytes() []byte {
