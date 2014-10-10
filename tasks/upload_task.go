@@ -81,7 +81,7 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 				targetPath := path.Join("/", manifestFile.Path(), file.Name)
 				request := storage.PutRequest{Path: targetPath, Contents: file.Contents, MD5: file.Checksums.MD5, Length: file.Length}
 				puts = append(puts, request)
-				log.Println("Uploading local file to", request.Path)
+				log.Println("Uploading local file to remote storage at", request.Path)
 			}
 		}
 	}
