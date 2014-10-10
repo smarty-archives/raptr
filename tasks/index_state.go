@@ -8,13 +8,15 @@ import (
 	"github.com/smartystreets/raptr/storage"
 )
 
+// TODO: release files will need to know all architectures and categories
 type IndexState struct {
-	category      string
-	distributions []string
-	architectures []string
-	items         []IndexItem
-	releaseFiles  map[string]*manifest.ReleaseFile
-	indexFiles    map[string]manifest.IndexFile
+	targetCategory string
+	distributions  []string
+	categories     []string
+	architectures  []string
+	items          []*IndexItem
+	releaseFiles   map[string]*manifest.ReleaseFile
+	indexFiles     map[string]manifest.IndexFile
 }
 type IndexItem struct {
 	path         string
@@ -27,18 +29,23 @@ type Serializable interface {
 	Bytes() []byte
 }
 
-func NewIndexState(category string, distributions, architectures []string) *IndexState {
+func (this *IndexItem) IsReleaseFile() bool {
+	return this.architecture == ""
+}
+
+func NewIndexState(targetCategory string, distributions, categories, architectures []string) *IndexState {
 	this := &IndexState{
-		category:      category,
-		distributions: distributions,
-		architectures: architectures,
-		items:         []IndexItem{},
-		releaseFiles:  map[string]*manifest.ReleaseFile{},
-		indexFiles:    map[string]manifest.IndexFile{},
+		targetCategory: targetCategory,
+		distributions:  distributions,
+		categories:     categories,
+		architectures:  architectures,
+		items:          []*IndexItem{},
+		releaseFiles:   map[string]*manifest.ReleaseFile{},
+		indexFiles:     map[string]manifest.IndexFile{},
 	}
 
 	for _, distribution := range distributions {
-		this.items = append(this.items, IndexItem{
+		this.items = append(this.items, &IndexItem{
 			path:         manifest.BuildReleaseFilePath(distribution),
 			distribution: distribution,
 		})
@@ -46,12 +53,12 @@ func NewIndexState(category string, distributions, architectures []string) *Inde
 		for _, architecture := range architectures {
 			path := ""
 			if architecture == "source" {
-				path = manifest.BuildSourcesFilePath(distribution, this.category)
+				path = manifest.BuildSourcesFilePath(distribution, this.targetCategory)
 			} else {
-				path = manifest.BuildPackagesFilePath(distribution, this.category, architecture)
+				path = manifest.BuildPackagesFilePath(distribution, this.targetCategory, architecture)
 			}
 
-			this.items = append(this.items, IndexItem{
+			this.items = append(this.items, &IndexItem{
 				path:         path,
 				distribution: distribution,
 				architecture: architecture,
@@ -89,17 +96,20 @@ func (this *IndexState) ReadGetResponses(responses []storage.GetResponse) error 
 	// this.indexFiles = append(this.indexFiles, indexFile)
 
 	for i, response := range responses {
+		this.items[i].previousMD5 = response.MD5
+
 		if response.Error != nil && response.Error != storage.FileNotFoundError {
 			return response.Error // only 404s are allowed here
 		}
-
-		this.items[i].previousMD5 = response.MD5
 	}
 
 	return nil
 }
 func (this *IndexState) Link(file *manifest.ManifestFile) error {
-	return nil
+	return nil // TODO
+}
+func (this *IndexState) GPGSign() error {
+	return nil // TODO
 }
 
 func (this *IndexState) BuildPutRequests() []storage.PutRequest {

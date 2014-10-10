@@ -8,12 +8,17 @@ import (
 )
 
 type LinkTask struct {
-	remote storage.Storage
-	multi  *storage.MultiStorage
+	remote     storage.Storage
+	multi      *storage.MultiStorage
+	categories []string
 }
 
-func NewLinkTask(remote storage.Storage) *LinkTask {
-	return &LinkTask{remote: remote, multi: storage.NewMultiStorage(remote)}
+func NewLinkTask(remote storage.Storage, categories []string) *LinkTask {
+	return &LinkTask{
+		remote:     remote,
+		multi:      storage.NewMultiStorage(remote),
+		categories: categories,
+	}
 }
 
 // by this point, we've verified the category and target distribution(s)
@@ -26,7 +31,7 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 		return err // unable to access or parse remote manifest, e.g. remote unavailable or permissions
 	}
 
-	state := NewIndexState(category, distributions, manifestFile.Architectures())
+	state := NewIndexState(category, distributions, this.categories, manifestFile.Architectures())
 	gets := state.BuildGetRequests()
 	if err := state.ReadGetResponses(this.multi.Get(gets...)); err != nil {
 		return err // unable to access or parse remote Release|Sources|Packages file(s)
@@ -36,7 +41,9 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 		return err
 	}
 
-	// TODO: GPG sign
+	if err = state.GPGSign(); err != nil {
+		return err
+	}
 
 	puts := state.BuildPutRequests()
 	if err := state.ReadPutResponses(this.multi.Put(puts...)); err != nil {
