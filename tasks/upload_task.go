@@ -24,7 +24,13 @@ func NewUploadTask(remote storage.Storage) *UploadTask {
 // will be done during the validation phase (prior to this)
 // such that any concurrency-related errors that might occur here
 // won't cause the validation to be re-run
-func (this *UploadTask) Upload(category, bundle, version string, packages []manifest.LocalPackage) error {
+func (this *UploadTask) Upload(category, bundle string, packages []manifest.LocalPackage) error {
+	if len(packages) == 0 {
+		log.Println("[INFO] No files found; nothing to do.")
+		return nil
+	}
+
+	version := packages[0].Version()
 	manifestPath := manifest.BuildPath(category, bundle, version)
 	log.Println("[INFO] Downloading manifest from", manifestPath)
 	manifestResponse := this.remote.Get(storage.GetRequest{Path: manifestPath})
@@ -69,7 +75,7 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 		if added, err := manifestFile.Add(pkg); err != nil {
 			return err // problem adding the file to the manifest, e.g. integrity or permissions errors, etc.
 		} else if !added {
-			log.Printf("[INFO] The package '%s_%s' (with associated files) already exists in the manifest, skipping.\n", pkg.Name(), pkg.Architecture())
+			log.Printf("[INFO] The package %s [cpu:%s] already exists in the manifest, skipping.\n", pkg.Name(), pkg.Architecture())
 		} else {
 			for _, file := range pkg.Files() {
 				targetPath := path.Join("/", manifestFile.Path(), file.Name)
