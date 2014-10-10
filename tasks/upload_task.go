@@ -26,7 +26,7 @@ func NewUploadTask(remote storage.Storage) *UploadTask {
 // won't cause the validation to be re-run
 func (this *UploadTask) Upload(category, bundle string, packages []manifest.LocalPackage) error {
 	if len(packages) == 0 {
-		log.Println("[INFO] No files found; nothing to do.")
+		log.Println("[INFO] No files found; nothing to do.") // TODO: shouldn't this be done before this?
 		return nil
 	}
 
