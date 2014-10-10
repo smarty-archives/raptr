@@ -2,6 +2,8 @@ package tasks
 
 import (
 	"log"
+	"path"
+	"strings"
 
 	"github.com/smartystreets/raptr/manifest"
 	"github.com/smartystreets/raptr/storage"
@@ -26,11 +28,23 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 		return err // unable to access or parse remote manifest, e.g. remote unavailable or permissions
 	}
 
+	indexes := []manifest.IndexFile{}
+	releases := []*manifest.ReleaseFile{}
+
 	requests := this.buildGetRequests(category, distributions, manifestFile.Architectures())
 	responses := this.multi.Get(requests...)
 	for _, response := range responses {
 		if response.Error != nil && response.Error != storage.FileNotFoundError {
 			return response.Error
+		}
+
+		filename := path.Base(response.Path)
+		if strings.HasPrefix(filename, "Release") {
+			// if release, err := manifest.ParseRelease(response.Contents); err != nil {
+			// 	return errors.New("")
+			// }
+		} else if strings.HasPrefix(filename, "Packages") {
+		} else if strings.HasPrefix(filename, "Sources") {
 		}
 
 		// three kinds of files--Release, Packages, Sources; parse each one as the appropriate type
@@ -39,14 +53,16 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 		// on the root one call release.Add(index) // which computes the various hashes of the bytes
 	}
 
-	// sign Releases file (GPG) (do this last)
+	// sign Releases file (GPG) (do this after everything else is working)
 	// upload all files (Packages|Sources|Release)--pass any concurrency errors up the chain
 	//    to the controlling code (which should re-run this task)
 	return nil
 }
+
 func (this *LinkTask) buildGetRequests(category string, distributions, architectures []string) []storage.GetRequest {
-	requests := []storage.GetRequest{storage.GetRequest{Path: manifest.BuildReleaseFilePath()}}
+	requests := []storage.GetRequest{}
 	for _, distribution := range distributions {
+		requests = append(requests, storage.GetRequest{Path: manifest.BuildReleaseFilePath(distribution)})
 		for _, architecture := range architectures {
 			path := ""
 			if architecture == "source" {

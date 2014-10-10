@@ -122,8 +122,8 @@ func serializeParagraphs(paragraphs []*Paragraph) []byte {
 	gzipWriter, _ := gzip.NewWriterLevel(buffer, gzip.BestCompression)
 
 	writer := NewWriter(gzipWriter)
-	for _, meta := range paragraphs {
-		meta.Write(writer)
+	for _, paragraph := range paragraphs {
+		paragraph.Write(writer)
 	}
 
 	gzipWriter.Close()

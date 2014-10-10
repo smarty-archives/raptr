@@ -26,16 +26,19 @@ func BuildPackagesFilePath(distribution, category, architecture string) string {
 
 func (this *PackagesFile) Add(manifest *ManifestFile) {
 	this.cachedBytes = nil
-	for _, paragraph := range manifest.architectures[this.architecture] {
-		name, version := paragraph.Name(), paragraph.Version()
-		id := name + "_" + version
-		if id == "_" {
-			continue // bad paragraph
-		} else if _, contains := this.packages[id]; contains {
-			continue // already exists
-		} else {
-			this.packages[id] = struct{}{}
-			this.paragraphs = append(this.paragraphs, paragraph)
+
+	for _, architecture := range []string{this.architecture, "any", "all"} {
+		for _, paragraph := range manifest.architectures[architecture] {
+			name, version := paragraph.Name(), paragraph.Version()
+			id := name + "_" + version
+			if id == "_" {
+				continue // bad paragraph
+			} else if _, contains := this.packages[id]; contains {
+				continue // already exists
+			} else {
+				this.packages[id] = struct{}{}
+				this.paragraphs = append(this.paragraphs, paragraph)
+			}
 		}
 	}
 }

@@ -1,24 +1,83 @@
 package manifest
 
+import (
+	"bytes"
+	"fmt"
+	"path"
+	"strings"
+	"time"
+)
+
 // Represents the highest level portion of an APT repository and contains
 // checksums of all the various subordinate Packages and Sources files
 // for a known set of CPU architectures and software categories
-// NOTE: it may be that this is a write-only file (depending upon the application logic)
-// and concurrency-related issues
 type ReleaseFile struct {
-	path string
+	path          string
+	distribution  string
+	categories    []string
+	architectures []string
+	sums          map[string]IndexFile
+	items         []IndexFile
 }
 
-func NewReleaseFile() *ReleaseFile {
-	return &ReleaseFile{path: BuildReleaseFilePath()}
+func NewReleaseFile(distribution string, categories, architectures []string) *ReleaseFile {
+	return &ReleaseFile{
+		path:          BuildReleaseFilePath(distribution),
+		distribution:  distribution,
+		categories:    categories,
+		architectures: architectures,
+		sums:          map[string]IndexFile{},
+		items:         []IndexFile{},
+	}
 }
-func BuildReleaseFilePath() string {
-	return "/Release.gz"
+func BuildReleaseFilePath(distribution) string {
+	return path.Join("/", distribution, "Release.gz")
+}
+
+func (this *ReleaseFile) Add(index IndexFile) {
+	if _, contains := this.sums[index.Path()]; !contains {
+		this.sums[index.Path()] = index
+		this.items = append(this.items, index)
+	}
 }
 
 func (this *ReleaseFile) Bytes() []byte {
-	// TODO: implements a gzip writer to compress stuff
-	return []byte{}
+	paragraph := NewParagraph()
+
+	addLine(paragraph, "Architectures", strings.Join(this.architectures, " "))
+	addLine(paragraph, "Components", strings.Join(this.categories, " "))
+	addLine(paragraph, "Date", time.Now().UTC().Format(time.RFC1123))
+	addLine(paragraph, "Description", "") // TODO:
+	addLine(paragraph, "Origin", "raptr")
+	addLine(paragraph, "Suite", this.distribution)
+
+	checksums := []Checksum{}
+	for _, item := range this.items {
+		checksum, _ := ComputeChecksums(bytes.NewBuffer(item.Bytes()))
+		checksums = append(checksums, checksum)
+	}
+	addLine(paragraph, "MD5Sum", "")
+	for i, item := range this.items {
+		addHashLine(paragraph, item, checksums[i].MD5)
+	}
+	addLine(paragraph, "SHA1Sum", "")
+	for i, item := range this.items {
+		addHashLine(paragraph, item, checksums[i].SHA1)
+	}
+	addLine(paragraph, "SHA256Sum", "")
+	for i, item := range this.items {
+		addHashLine(paragraph, item, checksums[i].SHA256)
+	}
+	addLine(paragraph, "SHA512Sum", "")
+	for i, item := range this.items {
+		addHashLine(paragraph, item, checksums[i].SHA512)
+	}
+
+	return serializeParagraphs([]*Paragraph{paragraph})
+}
+func addHashLine(paragraph *Paragraph, item IndexFile, checksum []byte) {
+	line := fmt.Sprintf("%x %16d %s", checksum, len(item.Bytes()), item.Path()[1:])
+	addLine(paragraph, "", line)
 }
 
 func (this *ReleaseFile) Path() string {
