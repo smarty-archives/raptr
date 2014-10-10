@@ -40,6 +40,21 @@ func ReadParagraph(reader *Reader) (*Paragraph, error) {
 	return this, nil
 }
 
+func (this *Paragraph) Name() string {
+	if item, contains := this.allKeys["Package"]; contains {
+		return item.Key
+	} else {
+		return ""
+	}
+}
+func (this *Paragraph) Version() string {
+	if item, contains := this.allKeys["Version"]; contains {
+		return item.Key
+	} else {
+		return ""
+	}
+}
+
 func (this *Paragraph) Add(item *LineItem, overwrite bool) error {
 	if item == nil {
 		return nil

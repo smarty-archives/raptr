@@ -10,22 +10,24 @@ import (
 )
 
 type ManifestFile struct {
-	category   string
-	bundle     string
-	version    string
-	hasDSC     bool
-	paragraphs []*Paragraph
-	packages   map[string]struct{}
+	category      string
+	bundle        string
+	version       string
+	hasDSC        bool
+	paragraphs    []*Paragraph
+	packages      map[string]struct{}
+	architectures map[string][]*Paragraph
 }
 
 func NewManifestFile(category, bundle, version string) *ManifestFile {
 	return &ManifestFile{
-		category:   category,
-		bundle:     bundle,
-		version:    version,
-		hasDSC:     false,
-		paragraphs: []*Paragraph{},
-		packages:   map[string]struct{}{},
+		category:      category,
+		bundle:        bundle,
+		version:       version,
+		hasDSC:        false,
+		paragraphs:    []*Paragraph{},
+		packages:      map[string]struct{}{},
+		architectures: map[string][]*Paragraph{},
 	}
 }
 func ParseManifest(reader io.Reader, category, bundle, version string) (*ManifestFile, error) {
@@ -52,9 +54,11 @@ func ParseManifest(reader io.Reader, category, bundle, version string) (*Manifes
 			return nil, errors.New("The package version differs from the provided manifest version.")
 		} else if _, contains := paragraph.allKeys["Files"]; contains {
 			this.packages[formatPackageID(packageName.Value, "source")] = struct{}{}
+			this.architectures["source"] = append(this.architectures["source"], paragraph)
 			this.paragraphs = append(this.paragraphs, paragraph)
 		} else if _, contains := paragraph.allKeys["Filename"]; contains {
 			this.packages[formatPackageID(packageName.Value, architecture.Value)] = struct{}{}
+			this.architectures[architecture.Value] = append(this.architectures[architecture.Value], paragraph)
 			this.paragraphs = append(this.paragraphs, paragraph)
 		}
 	}
@@ -63,6 +67,14 @@ func ParseManifest(reader io.Reader, category, bundle, version string) (*Manifes
 }
 func BuildPath(category, bundle, version string) string {
 	return path.Join("/pool/", category, bundle[0:1], bundle, version, "manifest.gz")
+}
+
+func (this *ManifestFile) Architectures() []string {
+	items := []string{}
+	for key, _ := range this.architectures {
+		items = append(items, key)
+	}
+	return items
 }
 
 func (this *ManifestFile) Path() string {
@@ -79,6 +91,7 @@ func (this *ManifestFile) Add(pkg LocalPackage) (bool, error) {
 		return false, err
 	} else {
 		this.packages[formatPackageID(pkg.Name(), pkg.Architecture())] = struct{}{}
+		this.architectures[pkg.Architecture()] = append(this.architectures[pkg.Architecture()], clone)
 		this.paragraphs = append(this.paragraphs, clone)
 		return true, nil
 	}
@@ -102,11 +115,14 @@ func formatPackageID(name, architecture string) string {
 }
 
 func (this *ManifestFile) Bytes() []byte {
+	return serializeParagraphs(this.paragraphs)
+}
+func serializeParagraphs(paragraphs []*Paragraph) []byte {
 	buffer := bytes.NewBuffer([]byte{})
 	gzipWriter, _ := gzip.NewWriterLevel(buffer, gzip.BestCompression)
 
 	writer := NewWriter(gzipWriter)
-	for _, meta := range this.paragraphs {
+	for _, meta := range paragraphs {
 		meta.Write(writer)
 	}
 
