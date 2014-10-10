@@ -103,9 +103,8 @@ func (this *S3Storage) Put(operation PutRequest) PutResponse {
 	request.ContentLength = int64(operation.Length) // TODO: when this is zero (empty files) the request uses "Transfer-Encoding: Chunked"?!
 	request.Header.Set("Content-Type", "binary/octet-stream")
 	request.Header.Set("Content-Disposition", "attachment")
-	// TODO: awsauth doesn't handle this header properly?
 	// if len(operation.MD5) > 0 {
-	// 	request.Header.Set("Content-MD5", hex.EncodeToString(operation.MD5))
+	// 	request.Header.Set("Content-Md5", hex.EncodeToString(operation.MD5))
 	// }
 	_, err := this.executeRequest(request)
 	return PutResponse{Path: operation.Path, Error: err}
@@ -127,9 +126,11 @@ func (this *S3Storage) newRequest(method, requestPath string, body io.Reader) *h
 }
 func (this *S3Storage) executeRequest(request *http.Request) (*http.Response, error) {
 	awsauth.Sign(request, this.credentials)
-	response, err := this.client.Do(request)
-	err = parseError(err, response.StatusCode)
-	return response, err
+	if response, err := this.client.Do(request); err != nil {
+		return nil, StorageUnavailableError
+	} else {
+		return response, parseError(response.StatusCode)
+	}
 }
 func parseMD5(encoded string) []byte {
 	if len(encoded) > 1 && strings.HasPrefix(encoded, `"`) {
@@ -147,10 +148,8 @@ func parseLength(length string) uint64 {
 	parsed, _ := strconv.ParseUint(length, 10, 64)
 	return parsed
 }
-func parseError(err error, statusCode int) error {
-	if err != nil {
-		return StorageUnavailableError // error caused by tcp issues, http protocol problems, or redirect policy
-	} else if statusCode == http.StatusOK {
+func parseError(statusCode int) error {
+	if statusCode == http.StatusOK {
 		return nil
 	} else if statusCode == http.StatusBadRequest { // 400
 		return ContentIntegrityError
