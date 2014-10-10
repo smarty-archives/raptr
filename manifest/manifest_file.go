@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -29,7 +30,12 @@ func NewManifestFile(category, bundle, version string) *ManifestFile {
 }
 func ParseManifest(reader io.Reader, category, bundle, version string) (*ManifestFile, error) {
 	this := NewManifestFile(category, bundle, version)
-	paragraphReader := NewReader(reader)
+	gzipReader, err := gzip.NewReader(reader)
+	paragraphReader := NewReader(gzipReader)
+
+	if err != nil {
+		return nil, err
+	}
 
 	for {
 		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {
@@ -56,7 +62,7 @@ func ParseManifest(reader io.Reader, category, bundle, version string) (*Manifes
 	return this, nil
 }
 func BuildPath(category, bundle, version string) string {
-	return path.Join("/pool/", category, bundle[0:1], bundle, version, "manifest") // FUTURE: gz?
+	return path.Join("/pool/", category, bundle[0:1], bundle, version, "manifest.gz")
 }
 
 func (this *ManifestFile) Path() string {
@@ -97,10 +103,13 @@ func formatPackageID(name, architecture string) string {
 
 func (this *ManifestFile) Bytes() []byte {
 	buffer := bytes.NewBuffer([]byte{})
-	writer := NewWriter(buffer)
+	gzipWriter, _ := gzip.NewWriterLevel(buffer, gzip.BestCompression)
+
+	writer := NewWriter(gzipWriter)
 	for _, meta := range this.paragraphs {
 		meta.Write(writer)
 	}
 
+	gzipWriter.Close()
 	return buffer.Bytes()
 }

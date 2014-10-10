@@ -53,7 +53,7 @@ func (this *ConcurrentStorage) alreadyExists(request PutRequest) bool {
 		log.Println("[INFO] Remote file exists, but contents have changed:", request.Path)
 		return false // same = already exists
 	} else {
-		log.Println("[INFO] Skipping remote file which already exists:", request.Path)
+		log.Println("[INFO] Skipping remote file which already exists with the same contents:", request.Path)
 		return true
 	}
 }
