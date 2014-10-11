@@ -40,7 +40,9 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 		return err // unable to access or parse remote Release|Sources|Packages file(s)
 	}
 
+	log.Println("[INFO] Linking manifest to downloaded indexes.")
 	state.Link(manifestFile)
+	log.Println("[INFO] Indexes updated.")
 
 	if err = state.GPGSign(); err != nil {
 		return err

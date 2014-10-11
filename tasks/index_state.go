@@ -142,11 +142,13 @@ func (this *IndexState) BuildPutRequests() []storage.PutRequest {
 	for _, item := range this.items {
 		payload := item.file.Bytes()
 		md5sum := md5.Sum(payload)
+		log.Printf("[INFO] Uploading index to %s.\n", item.file.Path())
 		requests = append(requests, storage.PutRequest{
 			Path:        item.file.Path(),
+			Length:      uint64(len(payload)),
+			Contents:    storage.NewReader(payload),
 			MD5:         md5sum[:],
 			ExpectedMD5: item.previousMD5, // make sure nothing has changed
-			Length:      uint64(len(payload)),
 		})
 	}
 	return requests
