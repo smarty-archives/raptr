@@ -2,10 +2,13 @@ package manifest
 
 import (
 	"bytes"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -14,22 +17,30 @@ import (
 // checksums of all the various subordinate Packages and Sources files
 // for a known set of CPU architectures and software categories
 type ReleaseFile struct {
-	path          string
+	filePath      string
+	baseDirectory string
 	distribution  string
 	categories    []string
 	architectures []string
-	sums          map[string]IndexFile
-	items         []IndexFile
+	sums          map[string]struct{}
+	items         []func() ReleaseItem
+}
+type ReleaseItem struct {
+	RelativePath string
+	Length       uint64
+	Checksums    map[string][]byte
 }
 
 func NewReleaseFile(distribution string, categories, architectures []string) *ReleaseFile {
+	filePath := BuildReleaseFilePath(distribution)
 	return &ReleaseFile{
-		path:          BuildReleaseFilePath(distribution),
+		filePath:      filePath,
+		baseDirectory: filepath.Dir(filePath),
 		distribution:  distribution,
 		categories:    categories,
 		architectures: architectures,
-		sums:          map[string]IndexFile{},
-		items:         []IndexFile{},
+		sums:          map[string]struct{}{},
+		items:         []func() ReleaseItem{},
 	}
 }
 func BuildReleaseFilePath(distribution string) string {
@@ -40,14 +51,95 @@ func (this *ReleaseFile) Add(index IndexFile) bool {
 	added := false
 	if _, contains := this.sums[index.Path()]; !contains {
 		added = true
-		this.sums[index.Path()] = index
-		this.items = append(this.items, index)
+		this.sums[index.Path()] = struct{}{}
+		this.items = append(this.items, func() ReleaseItem {
+			return this.translateIndexFile(index)
+		})
 	}
 	return added
 }
+func (this *ReleaseFile) translateIndexFile(file IndexFile) ReleaseItem {
+	basepath := filepath.Dir(this.Path())
+	relativePath, _ := filepath.Rel(basepath, file.Path())
+
+	checksum, _ := ComputeChecksums(bytes.NewBuffer(file.Bytes()))
+	checksums := map[string][]byte{}
+	checksums["MD5"] = checksum.MD5
+	checksums["SHA1"] = checksum.SHA1
+	checksums["SHA256"] = checksum.SHA256
+	checksums["SHA512"] = checksum.SHA512
+	return ReleaseItem{
+		RelativePath: relativePath,
+		Length:       uint64(len(file.Bytes())),
+		Checksums:    checksums,
+	}
+}
 
 func (this *ReleaseFile) Parse(reader io.Reader) error {
-	return nil // TODO
+	this.sums = map[string]struct{}{}
+	this.items = []func() ReleaseItem{}
+
+	paragraph, err := ReadParagraph(NewReader(reader))
+	if err != nil {
+		return err
+	}
+
+	parsed := map[string]ReleaseItem{}
+	hashType := ""
+	for _, item := range paragraph.items {
+		if strings.HasSuffix(item.Key, "Sum") {
+			hashType = item.Key[0 : len(item.Key)-3]
+		} else if len(hashType) == 0 {
+			continue
+		} else if err := parseReleaseItem(hashType, item.Value, parsed); err != nil {
+			return err
+		}
+	}
+
+	for _, item := range parsed {
+		this.items = append(this.items, func() ReleaseItem {
+			return item
+		})
+	}
+
+	return nil
+}
+func parseReleaseItem(hashType, unparsed string, parsed map[string]ReleaseItem) error {
+	unparsed = strings.TrimSpace(unparsed)
+	indexOfWhitespace := strings.Index(unparsed, " ")
+	if indexOfWhitespace == -1 {
+		return errors.New("Malformed line--missing hash")
+	}
+
+	computed, err := hex.DecodeString(unparsed[0:indexOfWhitespace])
+	if err != nil {
+		return errors.New("Malformed line--bad hash")
+	}
+	unparsed = strings.TrimSpace(unparsed[indexOfWhitespace+1:])
+
+	indexOfWhitspace := strings.LastIndex(unparsed, " ")
+	if indexOfWhitspace == -1 {
+		return errors.New("Malformed line--missing filename")
+	}
+
+	relativePath := unparsed[indexOfWhitspace+1:]
+	unparsed = strings.TrimSpace(unparsed[0:indexOfWhitspace])
+
+	length, err := strconv.ParseUint(unparsed, 10, 64)
+	if err != nil {
+		return errors.New("Malformed line--missing length")
+	}
+
+	item, contains := parsed[relativePath]
+	if !contains {
+		item.RelativePath = relativePath
+		item.Length = length
+		item.Checksums = map[string][]byte{}
+		parsed[relativePath] = item
+	}
+
+	item.Checksums[hashType] = computed
+	return nil
 }
 
 func (this *ReleaseFile) Bytes() []byte {
@@ -60,37 +152,22 @@ func (this *ReleaseFile) Bytes() []byte {
 	addLine(paragraph, "Origin", "raptr")
 	addLine(paragraph, "Suite", this.distribution)
 
-	checksums := []Checksum{}
-	for _, item := range this.items {
-		checksum, _ := ComputeChecksums(bytes.NewBuffer(item.Bytes()))
-		checksums = append(checksums, checksum)
+	releaseItems := []ReleaseItem{}
+	for _, itemFunc := range this.items {
+		releaseItems = append(releaseItems, itemFunc())
 	}
-	addLine(paragraph, "MD5Sum", "")
-	for i, item := range this.items {
-		this.addHashLine(paragraph, item, checksums[i].MD5)
-	}
-	addLine(paragraph, "SHA1Sum", "")
-	for i, item := range this.items {
-		this.addHashLine(paragraph, item, checksums[i].SHA1)
-	}
-	addLine(paragraph, "SHA256Sum", "")
-	for i, item := range this.items {
-		this.addHashLine(paragraph, item, checksums[i].SHA256)
-	}
-	addLine(paragraph, "SHA512Sum", "")
-	for i, item := range this.items {
-		this.addHashLine(paragraph, item, checksums[i].SHA512)
+
+	for _, hashType := range []string{"MD5", "SHA1", "SHA256", "SHA512"} {
+		addLine(paragraph, hashType+"Sum", "")
+		for _, item := range releaseItems {
+			value := fmt.Sprintf("%x %16d %s", item.Checksums[hashType], item.Length, item.RelativePath)
+			addLine(paragraph, "", value)
+		}
 	}
 
 	return serializeParagraphs([]*Paragraph{paragraph})
 }
-func (this *ReleaseFile) addHashLine(paragraph *Paragraph, item IndexFile, checksum []byte) {
-	basepath := filepath.Dir(this.Path())
-	relativePath, _ := filepath.Rel(basepath, item.Path())
-	line := fmt.Sprintf("%x %16d %s", checksum, len(item.Bytes()), relativePath)
-	addLine(paragraph, "", line)
-}
 
 func (this *ReleaseFile) Path() string {
-	return this.path
+	return this.filePath
 }

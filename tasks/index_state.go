@@ -114,15 +114,15 @@ func (this *IndexState) ReadGetResponses(responses []storage.GetResponse) error 
 }
 func (this *IndexState) Link(file *manifest.ManifestFile) bool {
 	added := false
-	releaseFiles := map[string]*manifest.ReleaseFile{}
-	for _, item := range this.items {
-		if item.targetArchitecture == "" {
-			releaseFiles[this.distribution] = item.file.(*manifest.ReleaseFile)
+	var releaseFile *manifest.ReleaseFile
+	for i, item := range this.items {
+		if i == 0 {
+			releaseFile = item.file.(*manifest.ReleaseFile)
 		} else {
 			indexItem := item.file.(manifest.IndexFile)
 			if indexItem.Add(file) {
 				added = true
-				releaseFiles[this.distribution].Add(indexItem)
+				releaseFile.Add(indexItem)
 			}
 		}
 	}
