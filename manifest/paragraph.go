@@ -42,14 +42,14 @@ func ReadParagraph(reader *Reader) (*Paragraph, error) {
 
 func (this *Paragraph) Name() string {
 	if item, contains := this.allKeys["Package"]; contains {
-		return item.Key
+		return item.Value
 	} else {
 		return ""
 	}
 }
 func (this *Paragraph) Version() string {
 	if item, contains := this.allKeys["Version"]; contains {
-		return item.Key
+		return item.Value
 	} else {
 		return ""
 	}

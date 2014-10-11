@@ -27,9 +27,8 @@ func BuildPackagesFilePath(distribution, category, architecture string) string {
 	return path.Join("/dists/", distribution, category, "binary-"+architecture, "Packages")
 }
 
-func (this *PackagesFile) Add(manifest *ManifestFile) {
-	this.cachedBytes = nil
-
+func (this *PackagesFile) Add(manifest *ManifestFile) bool {
+	added := false
 	for _, architecture := range []string{this.architecture, "any", "all"} {
 		for _, paragraph := range manifest.architectures[architecture] {
 			name, version := paragraph.Name(), paragraph.Version()
@@ -39,11 +38,15 @@ func (this *PackagesFile) Add(manifest *ManifestFile) {
 			} else if _, contains := this.packages[id]; contains {
 				continue // already exists
 			} else {
+				added = true
+				this.cachedBytes = nil
 				this.packages[id] = struct{}{}
 				this.paragraphs = append(this.paragraphs, paragraph)
 			}
 		}
 	}
+
+	return added
 }
 
 func (this *PackagesFile) Parse(reader io.Reader) error {

@@ -12,14 +12,12 @@ import (
 )
 
 type IndexState struct {
-	targetCategory   string
-	distributions    []string
-	allCategories    []string
-	allArchitectures []string
-	items            []*IndexItem
+	distribution           string
+	availableCategories    []string
+	availableArchitectures []string
+	items                  []*IndexItem
 }
 type IndexItem struct {
-	distribution       string
 	targetArchitecture string
 	previousMD5        []byte
 	file               IndexFile
@@ -30,36 +28,29 @@ type IndexFile interface {
 	Bytes() []byte
 }
 
-func NewIndexState(targetCategory string, distributions, allCategories, allArchitectures, targetArchitectures []string) *IndexState {
-	this := &IndexState{
-		targetCategory:   targetCategory,
-		distributions:    distributions,
-		allCategories:    allCategories,
-		allArchitectures: allArchitectures,
-		items:            []*IndexItem{},
+func NewIndexState(distribution string, availableCategories, availableArchitectures []string) *IndexState {
+	return &IndexState{
+		distribution:           distribution,
+		availableCategories:    availableCategories,
+		availableArchitectures: availableArchitectures,
+		items: []*IndexItem{},
 	}
-
-	targetArchitectures = findTargetArchitectures(allArchitectures, targetArchitectures)
-	log.Println("[INFO] Manifest contains packages with these architectures:", targetArchitectures)
-
-	for _, distribution := range distributions {
-		this.items = append(this.items, &IndexItem{
-			distribution: distribution,
-			file:         manifest.NewReleaseFile(distribution, this.allCategories, this.allArchitectures),
-		})
-
-		for _, targetArchitecture := range targetArchitectures {
-			this.items = append(this.items, &IndexItem{
-				distribution:       distribution,
-				targetArchitecture: targetArchitecture,
-				file:               buildIndexFile(distribution, this.targetCategory, targetArchitecture),
-			})
-		}
-	}
-
-	return this
 }
-func findTargetArchitectures(all, targets []string) []string {
+func (this *IndexState) AddTarget(category string, architectures []string) {
+	resolvedArchitectures := resolveArchitectures(this.availableArchitectures, architectures)
+	log.Println("[INFO] Manifest contains packages with these CPU architectures:", resolvedArchitectures)
+
+	releaseFile := manifest.NewReleaseFile(this.distribution, this.availableCategories, this.availableArchitectures)
+	this.items = append(this.items, &IndexItem{file: releaseFile})
+
+	for _, targetArchitecture := range resolvedArchitectures {
+		this.items = append(this.items, &IndexItem{
+			targetArchitecture: targetArchitecture,
+			file:               buildIndexFile(this.distribution, category, targetArchitecture),
+		})
+	}
+}
+func resolveArchitectures(all, targets []string) []string {
 	parsed := map[string]struct{}{}
 	allowed := []string{}
 	for _, target := range targets {
@@ -121,17 +112,21 @@ func (this *IndexState) ReadGetResponses(responses []storage.GetResponse) error 
 
 	return nil
 }
-func (this *IndexState) Link(file *manifest.ManifestFile) {
+func (this *IndexState) Link(file *manifest.ManifestFile) bool {
+	added := false
 	releaseFiles := map[string]*manifest.ReleaseFile{}
 	for _, item := range this.items {
 		if item.targetArchitecture == "" {
-			releaseFiles[item.distribution] = item.file.(*manifest.ReleaseFile)
+			releaseFiles[this.distribution] = item.file.(*manifest.ReleaseFile)
 		} else {
 			indexItem := item.file.(manifest.IndexFile)
-			indexItem.Add(file)
-			releaseFiles[item.distribution].Add(indexItem)
+			if indexItem.Add(file) {
+				added = true
+				releaseFiles[this.distribution].Add(indexItem)
+			}
 		}
 	}
+	return added
 }
 func (this *IndexState) GPGSign() error {
 	return nil // TODO

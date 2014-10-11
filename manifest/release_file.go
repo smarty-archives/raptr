@@ -36,11 +36,14 @@ func BuildReleaseFilePath(distribution string) string {
 	return path.Join("/dists/", distribution, "Release")
 }
 
-func (this *ReleaseFile) Add(index IndexFile) {
+func (this *ReleaseFile) Add(index IndexFile) bool {
+	added := false
 	if _, contains := this.sums[index.Path()]; !contains {
+		added = true
 		this.sums[index.Path()] = index
 		this.items = append(this.items, index)
 	}
+	return added
 }
 
 func (this *ReleaseFile) Parse(reader io.Reader) error {

@@ -25,8 +25,8 @@ func BuildSourcesFilePath(distribution, category string) string {
 	return path.Join("/dists/", distribution, category, "source/Sources")
 }
 
-func (this *SourcesFile) Add(manifest *ManifestFile) {
-	this.cachedBytes = nil
+func (this *SourcesFile) Add(manifest *ManifestFile) bool {
+	added := false
 	for _, paragraph := range manifest.architectures["source"] {
 		name, version := paragraph.Name(), paragraph.Version()
 		id := name + "_" + version
@@ -35,10 +35,14 @@ func (this *SourcesFile) Add(manifest *ManifestFile) {
 		} else if _, contains := this.packages[id]; contains {
 			continue // already exists
 		} else {
+			added = true
+			this.cachedBytes = nil
 			this.packages[id] = struct{}{}
 			this.paragraphs = append(this.paragraphs, paragraph)
 		}
 	}
+
+	return added
 }
 
 func (this *SourcesFile) Parse(reader io.Reader) error {

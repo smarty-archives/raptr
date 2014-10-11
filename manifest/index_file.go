@@ -4,7 +4,7 @@ import "io"
 
 type IndexFile interface {
 	Path() string
-	Add(*ManifestFile)
+	Add(*ManifestFile) bool
 
 	Parse(io.Reader) error
 	Bytes() []byte

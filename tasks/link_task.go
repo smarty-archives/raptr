@@ -25,7 +25,7 @@ func NewLinkTask(remote storage.Storage, categories, architectures []string) *Li
 }
 
 // by this point, we've verified the category and target distribution(s)
-func (this *LinkTask) Link(category, bundle, version string, distributions ...string) error {
+func (this *LinkTask) Link(distribution, category, bundle, version string) error {
 	manifestPath := manifest.BuildPath(category, bundle, version)
 	log.Println("[INFO] Downloading manifest from", manifestPath)
 	response := this.remote.Get(storage.GetRequest{Path: manifestPath})
@@ -39,17 +39,22 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 	}
 
 	log.Println("[INFO] Manifest parsed.")
-	state := NewIndexState(category, distributions, this.categories, this.architectures, manifestFile.Architectures())
+	state := NewIndexState(distribution, this.categories, this.architectures)
+	state.AddTarget(category, manifestFile.Architectures())
 	gets := state.BuildGetRequests()
 	if err := state.ReadGetResponses(this.multi.Get(gets...)); err != nil {
+		log.Println("[ERROR] Failed to parse one or more index files.")
 		return err // unable to access or parse remote Release|Sources|Packages file(s)
 	}
 
 	log.Println("[INFO] Linking manifest to downloaded indexes.")
-	state.Link(manifestFile)
-	log.Println("[INFO] Indexes updated.")
+	if !state.Link(manifestFile) {
+		log.Println("[INFO] Manifest already found in index files; no changes performed.")
+		return nil
+	}
 
 	if err = state.GPGSign(); err != nil {
+		log.Println("[ERROR] Unable to sign the Release file.")
 		return err
 	}
 

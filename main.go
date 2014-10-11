@@ -73,5 +73,5 @@ func executeLink(configuration config.Configuration, command messages.LinkComman
 	layout := remote.Layout
 	task := tasks.NewLinkTask(remote.Storage, layout.Categories, layout.Architectures)
 
-	return task.Link(command.Category, command.PackageName, command.PackageVersion, command.Distribution)
+	return task.Link(command.Distribution, command.Category, command.PackageName, command.PackageVersion)
 }

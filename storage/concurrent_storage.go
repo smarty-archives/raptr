@@ -21,24 +21,24 @@ func NewConcurrentStorage(inner Storage) *ConcurrentStorage {
 }
 
 func (this *ConcurrentStorage) Put(request PutRequest) PutResponse {
-	if err := this.ensureContents(request, CheckBeforePut); err != nil {
+	if err := this.ensureContents(request, CheckBeforePut, request.ExpectedMD5); err != nil {
 		return PutResponse{Path: request.Path, Error: err} // md5 differs from expected
 	} else if this.alreadyExists(request) {
 		return PutResponse{Path: request.Path} // no need to upload a duplicate file
 	} else if response := this.inner.Put(request); response.Error != nil {
 		return response // error trying to put contents
-	} else if err := this.ensureContents(request, CheckAfterPut); err != nil {
+	} else if err := this.ensureContents(request, CheckAfterPut, request.MD5); err != nil {
 		return PutResponse{Path: request.Path, Error: err} // md5 differs from expected
 	} else {
 		return response //success
 	}
 }
-func (this *ConcurrentStorage) ensureContents(request PutRequest, concurrency int) error {
+func (this *ConcurrentStorage) ensureContents(request PutRequest, concurrency int, expectedMD5 []byte) error {
 	if request.Concurrency&concurrency != concurrency {
 		return nil // this isn't the concurrency level you're looking for
 	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
 		return response.Error // not found, permissions, unavailable, etc.
-	} else if bytes.Compare(request.ExpectedMD5, response.MD5) != 0 {
+	} else if bytes.Compare(expectedMD5, response.MD5) != 0 {
 		return ConcurrencyError
 	} else {
 		return nil
@@ -50,10 +50,10 @@ func (this *ConcurrentStorage) alreadyExists(request PutRequest) bool {
 	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
 		return false // doesn't exist or some other kind error
 	} else if !bytes.Equal(request.MD5, response.MD5) {
-		log.Println("[INFO] Remote file exists, but contents have changed:", request.Path)
+		// log.Println("[INFO] Remote file exists, but contents have changed:", request.Path)
 		return false // same = already exists
 	} else {
-		log.Println("[INFO] Skipping remote file which already exists with the same contents:", request.Path)
+		log.Println("[INFO] Identical contents; skipping:", request.Path)
 		return true
 	}
 }
