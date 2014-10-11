@@ -22,8 +22,7 @@ type ReleaseFile struct {
 	distribution  string
 	categories    []string
 	architectures []string
-	sums          map[string]struct{}
-	items         []func() ReleaseItem
+	items         map[string]func() ReleaseItem
 }
 type ReleaseItem struct {
 	RelativePath string
@@ -39,8 +38,7 @@ func NewReleaseFile(distribution string, categories, architectures []string) *Re
 		distribution:  distribution,
 		categories:    categories,
 		architectures: architectures,
-		sums:          map[string]struct{}{},
-		items:         []func() ReleaseItem{},
+		items:         map[string]func() ReleaseItem{},
 	}
 }
 func BuildReleaseFilePath(distribution string) string {
@@ -48,20 +46,20 @@ func BuildReleaseFilePath(distribution string) string {
 }
 
 func (this *ReleaseFile) Add(index IndexFile) bool {
+	basepath := filepath.Dir(this.Path())
+	relativePath, _ := filepath.Rel(basepath, index.Path())
+
 	added := false
-	if _, contains := this.sums[index.Path()]; !contains {
+	if _, contains := this.items[relativePath]; !contains {
 		added = true
-		this.sums[index.Path()] = struct{}{}
-		this.items = append(this.items, func() ReleaseItem {
-			return this.translateIndexFile(index)
-		})
+		relativeFilePath := relativePath // closure guard
+		this.items[index.Path()] = func() ReleaseItem {
+			return this.translateIndexFile(relativeFilePath, index)
+		}
 	}
 	return added
 }
-func (this *ReleaseFile) translateIndexFile(file IndexFile) ReleaseItem {
-	basepath := filepath.Dir(this.Path())
-	relativePath, _ := filepath.Rel(basepath, file.Path())
-
+func (this *ReleaseFile) translateIndexFile(relativePath string, file IndexFile) ReleaseItem {
 	checksum, _ := ComputeChecksums(bytes.NewBuffer(file.Bytes()))
 	checksums := map[string][]byte{}
 	checksums["MD5"] = checksum.MD5
@@ -76,8 +74,7 @@ func (this *ReleaseFile) translateIndexFile(file IndexFile) ReleaseItem {
 }
 
 func (this *ReleaseFile) Parse(reader io.Reader) error {
-	this.sums = map[string]struct{}{}
-	this.items = []func() ReleaseItem{}
+	this.items = map[string]func() ReleaseItem{}
 
 	paragraph, err := ReadParagraph(NewReader(reader))
 	if err != nil {
@@ -98,9 +95,9 @@ func (this *ReleaseFile) Parse(reader io.Reader) error {
 
 	for _, item := range parsed {
 		unique := item
-		this.items = append(this.items, func() ReleaseItem {
+		this.items[unique.RelativePath] = func() ReleaseItem {
 			return unique
-		})
+		}
 	}
 
 	return nil
@@ -155,7 +152,8 @@ func (this *ReleaseFile) Bytes() []byte {
 
 	releaseItems := []ReleaseItem{}
 	for _, itemFunc := range this.items {
-		releaseItems = append(releaseItems, itemFunc())
+		result := itemFunc()
+		releaseItems = append(releaseItems, result)
 	}
 
 	for _, hashType := range []string{"MD5", "SHA1", "SHA256", "SHA512"} {
