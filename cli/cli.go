@@ -23,8 +23,7 @@ Usage:
         --version=V
         --storage=S
         --category=C
-        --source-distribution=SD
-        --target-distribution=TD
+        --distribution=D
         [--config=CONF]
         
     raptr unlink
@@ -43,7 +42,7 @@ Usage:
         
 Examples:
     raptr upload --name=liveaddress-logging --path=/package/files --storage=s3 --category=operations --distribution=staging
-    raptr link --name=liveaddress-logging --version=1.0.7 --storage=s3 --category=liveaddress --source-distribution=staging --target-distribution=production
+    raptr link --name=liveaddress-logging --version=1.0.7 --storage=s3 --category=liveaddress --distribution=production
     raptr unlink --name=liveaddress-logging --version=1.0.7 --storage=s3 --category=liveaddress --distribution=production
     raptr clean --storage=named-storage
         
@@ -54,8 +53,6 @@ Options:
     --storage=S               Storage mechanism to use (eg: s3, filesystem, etc)
     --category=C              Category the package falls under
     --distribution=D          Distribution to link to (optional for upload, if exists, links package to distribution)
-    --source-distribution=SD  Source distribution
-    --target-distribution=TD  Target distribution
     --config=CONF             Path to a config file (optional)
     -h  Shows this screen
 `
@@ -85,12 +82,11 @@ Options:
 		}, configFile
 	} else if arguments["link"] == true {
 		return messages.LinkCommand{
-			PackageName:        arguments["--name"].(string),
-			PackageVersion:     arguments["--version"].(string),
-			StorageName:        arguments["--storage"].(string),
-			Category:           arguments["--category"].(string),
-			SourceDistribution: arguments["--source-distribution"].(string),
-			TargetDistribution: arguments["--target-distribution"].(string),
+			PackageName:    arguments["--name"].(string),
+			PackageVersion: arguments["--version"].(string),
+			StorageName:    arguments["--storage"].(string),
+			Category:       arguments["--category"].(string),
+			Distribution:   arguments["--distribution"].(string),
 		}, configFile
 	} else if arguments["unlink"] == true {
 		return messages.UnlinkCommand{

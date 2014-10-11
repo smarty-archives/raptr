@@ -9,12 +9,11 @@ type UploadCommand struct {
 }
 
 type LinkCommand struct {
-	PackageName        string
-	PackageVersion     string
-	StorageName        string
-	Category           string
-	SourceDistribution string
-	TargetDistribution string
+	PackageName    string
+	PackageVersion string
+	StorageName    string
+	Category       string
+	Distribution   string
 }
 
 type UnlinkCommand struct {
