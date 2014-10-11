@@ -22,7 +22,7 @@ func NewSourcesFile(distribution, category string) *SourcesFile {
 	}
 }
 func BuildSourcesFilePath(distribution, category string) string {
-	return path.Join("/dists/", distribution, category, "source/Sources.gz")
+	return path.Join("/dists/", distribution, category, "source/Sources")
 }
 
 func (this *SourcesFile) Add(manifest *ManifestFile) {

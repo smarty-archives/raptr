@@ -24,7 +24,7 @@ func NewPackagesFile(distribution, category, architecture string) *PackagesFile 
 	}
 }
 func BuildPackagesFilePath(distribution, category, architecture string) string {
-	return path.Join("/dists/", distribution, category, "binary-"+architecture, "Packages.gz")
+	return path.Join("/dists/", distribution, category, "binary-"+architecture, "Packages")
 }
 
 func (this *PackagesFile) Add(manifest *ManifestFile) {
