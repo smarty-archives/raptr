@@ -8,6 +8,7 @@ import (
 	"io"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -150,10 +151,15 @@ func (this *ReleaseFile) Bytes() []byte {
 	addLine(paragraph, "Origin", "raptr")
 	addLine(paragraph, "Suite", this.distribution)
 
+	keys := []string{}
+	for key, _ := range this.items {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	releaseItems := []ReleaseItem{}
-	for _, itemFunc := range this.items {
-		result := itemFunc()
-		releaseItems = append(releaseItems, result)
+	for _, key := range keys {
+		releaseItems = append(releaseItems, this.items[key]())
 	}
 
 	for _, hashType := range []string{"MD5", "SHA1", "SHA256", "SHA512"} {
