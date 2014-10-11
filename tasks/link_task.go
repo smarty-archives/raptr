@@ -33,6 +33,7 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 		return err // unable to access or parse remote manifest, e.g. remote unavailable or permissions
 	}
 
+	log.Println("[INFO] Manifest parsed.")
 	state := NewIndexState(category, distributions, this.categories, this.architectures, manifestFile.Architectures())
 	gets := state.BuildGetRequests()
 	if err := state.ReadGetResponses(this.multi.Get(gets...)); err != nil {
@@ -51,21 +52,4 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 	}
 
 	return nil
-}
-
-func (this *LinkTask) buildGetRequests(category string, distributions, architectures []string) []storage.GetRequest {
-	requests := []storage.GetRequest{}
-	for _, distribution := range distributions {
-		requests = append(requests, storage.GetRequest{Path: manifest.BuildReleaseFilePath(distribution)})
-		for _, architecture := range architectures {
-			path := ""
-			if architecture == "source" {
-				path = manifest.BuildSourcesFilePath(distribution, category)
-			} else {
-				path = manifest.BuildPackagesFilePath(distribution, category, architecture)
-			}
-			requests = append(requests, storage.GetRequest{Path: path})
-		}
-	}
-	return requests
 }

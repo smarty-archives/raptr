@@ -32,7 +32,7 @@ func NewReleaseFile(distribution string, categories, architectures []string) *Re
 	}
 }
 func BuildReleaseFilePath(distribution string) string {
-	return path.Join("/", distribution, "Release.gz")
+	return path.Join("/dists/", distribution, "Release.gz")
 }
 
 func (this *ReleaseFile) Add(index IndexFile) {
@@ -43,7 +43,7 @@ func (this *ReleaseFile) Add(index IndexFile) {
 }
 
 func (this *ReleaseFile) Parse(reader io.Reader) error {
-	return nil
+	return nil // TODO
 }
 
 func (this *ReleaseFile) Bytes() []byte {

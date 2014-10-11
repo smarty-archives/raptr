@@ -4,72 +4,96 @@ import (
 	"crypto/md5"
 	"errors"
 	"io"
+	"log"
+	"sort"
 
 	"github.com/smartystreets/raptr/manifest"
 	"github.com/smartystreets/raptr/storage"
 )
 
-// TODO: release files will need to know all architectures and categories
 type IndexState struct {
-	targetCategory string
-	distributions  []string
-	categories     []string
-	architectures  []string
-	items          []*IndexItem
+	targetCategory   string
+	distributions    []string
+	allCategories    []string
+	allArchitectures []string
+	items            []*IndexItem
 }
 type IndexItem struct {
 	distribution       string
 	targetArchitecture string
 	previousMD5        []byte
-	file               Serializable
+	file               IndexFile
 }
-type Serializable interface {
+type IndexFile interface {
 	Path() string
 	Parse(io.Reader) error
 	Bytes() []byte
 }
 
-func (this *IndexItem) IsReleaseFile() bool {
-	return this.targetArchitecture == ""
-}
-
-func NewIndexState(targetCategory string, distributions, categories, architectures, targetArchitectures []string) *IndexState {
+func NewIndexState(targetCategory string, distributions, allCategories, allArchitectures, targetArchitectures []string) *IndexState {
 	this := &IndexState{
-		targetCategory: targetCategory,
-		distributions:  distributions,
-		categories:     categories,
-		architectures:  architectures,
-		items:          []*IndexItem{},
+		targetCategory:   targetCategory,
+		distributions:    distributions,
+		allCategories:    allCategories,
+		allArchitectures: allArchitectures,
+		items:            []*IndexItem{},
 	}
+
+	targetArchitectures = findTargetArchitectures(allArchitectures, targetArchitectures)
+	log.Println("[INFO] Manifest contains packages with these architectures:", targetArchitectures)
 
 	for _, distribution := range distributions {
 		this.items = append(this.items, &IndexItem{
 			distribution: distribution,
-			file:         manifest.NewReleaseFile(distribution, this.categories, this.architectures),
+			file:         manifest.NewReleaseFile(distribution, this.allCategories, this.allArchitectures),
 		})
 
 		for _, targetArchitecture := range targetArchitectures {
-			var file Serializable
-			if targetArchitecture == "source" {
-				file = manifest.NewSourcesFile(distribution, this.targetCategory)
-			} else {
-				file = manifest.NewPackagesFile(distribution, this.targetCategory, targetArchitecture)
-			}
-
 			this.items = append(this.items, &IndexItem{
 				distribution:       distribution,
 				targetArchitecture: targetArchitecture,
-				file:               file,
+				file:               buildIndexFile(distribution, this.targetCategory, targetArchitecture),
 			})
 		}
 	}
 
 	return this
 }
+func findTargetArchitectures(all, targets []string) []string {
+	parsed := map[string]struct{}{}
+	allowed := []string{}
+	for _, target := range targets {
+		if target == "all" || target == "any" {
+			for _, item := range all {
+				if item != "source" {
+					parsed[item] = struct{}{}
+				}
+			}
+		} else {
+			parsed[target] = struct{}{}
+		}
+	}
+
+	for key, _ := range parsed {
+		allowed = append(allowed, key)
+	}
+
+	sort.Strings(allowed)
+	return allowed
+}
+
+func buildIndexFile(distribution, category, architecture string) manifest.IndexFile {
+	if architecture == "source" {
+		return manifest.NewSourcesFile(distribution, category)
+	} else {
+		return manifest.NewPackagesFile(distribution, category, architecture)
+	}
+}
 
 func (this *IndexState) BuildGetRequests() []storage.GetRequest {
 	requests := []storage.GetRequest{}
 	for _, item := range this.items {
+		log.Printf("[INFO] Downloading file from %s.\n", item.file.Path())
 		requests = append(requests, storage.GetRequest{Path: item.file.Path()})
 	}
 	return requests
@@ -100,7 +124,7 @@ func (this *IndexState) ReadGetResponses(responses []storage.GetResponse) error 
 func (this *IndexState) Link(file *manifest.ManifestFile) {
 	releaseFiles := map[string]*manifest.ReleaseFile{}
 	for _, item := range this.items {
-		if item.IsReleaseFile() {
+		if item.targetArchitecture == "" {
 			releaseFiles[item.distribution] = item.file.(*manifest.ReleaseFile)
 		} else {
 			indexItem := item.file.(manifest.IndexFile)

@@ -32,7 +32,7 @@ func executeCommand(configuration config.Configuration, message interface{}) err
 	case messages.UploadCommand:
 		return executeUpload(configuration, message.(messages.UploadCommand))
 	case messages.LinkCommand:
-		return errors.New("Not implemented")
+		return executeLink(configuration, message.(messages.LinkCommand))
 	case messages.UnlinkCommand:
 		return errors.New("Not implemented")
 	case messages.CleanCommand:
@@ -63,4 +63,15 @@ func executeUpload(configuration config.Configuration, command messages.UploadCo
 		// otherwise, the name would be required.
 		return task.Upload(command.Category, command.PackageName, files)
 	}
+}
+func executeLink(configuration config.Configuration, command messages.LinkCommand) error {
+	remote, found := configuration.Open(command.StorageName)
+	if !found {
+		return errors.New("Remote storage specified was not found in the configuration file.")
+	}
+
+	layout := remote.Layout
+	task := tasks.NewLinkTask(remote.Storage, layout.Categories, layout.Architectures)
+
+	return task.Link(command.Category, command.PackageName, command.PackageVersion, command.Distribution)
 }

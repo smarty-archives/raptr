@@ -47,7 +47,7 @@ func (this *PackagesFile) Add(manifest *ManifestFile) {
 }
 
 func (this *PackagesFile) Parse(reader io.Reader) error {
-	return nil
+	return nil // TODO
 }
 
 func (this *PackagesFile) Bytes() []byte {

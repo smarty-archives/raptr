@@ -42,7 +42,7 @@ func (this *SourcesFile) Add(manifest *ManifestFile) {
 }
 
 func (this *SourcesFile) Parse(reader io.Reader) error {
-	return nil
+	return nil // TODO
 }
 
 func (this *SourcesFile) Bytes() []byte {
