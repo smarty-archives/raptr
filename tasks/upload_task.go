@@ -75,7 +75,7 @@ func (this *UploadTask) uploadPackages(packages []manifest.LocalPackage, manifes
 		if added, err := manifestFile.Add(pkg); err != nil {
 			return err // problem adding the file to the manifest, e.g. integrity or permissions errors, etc.
 		} else if !added {
-			log.Printf("[INFO] The package %s [cpu:%s] already exists in the manifest, skipping.\n", pkg.Name(), pkg.Architecture())
+			log.Printf("[INFO] The package %s:%s already exists in the manifest, skipping.\n", pkg.Name(), pkg.Architecture())
 		} else {
 			for _, file := range pkg.Files() {
 				targetPath := path.Join("/", manifestFile.Path(), file.Name)
