@@ -37,7 +37,13 @@ func (this *ConcurrentStorage) ensureContents(request PutRequest, concurrency in
 	if request.Concurrency&concurrency != concurrency {
 		return nil // this isn't the concurrency level you're looking for
 	} else if response := this.inner.Head(HeadRequest{Path: request.Path}); response.Error != nil {
-		return response.Error // not found, permissions, unavailable, etc.
+
+		if response.Error == FileNotFoundError && len(expectedMD5) == 0 {
+			return nil // we didn't expect anything and there's still nothing there
+		} else {
+			return response.Error // not found, permissions, unavailable, etc.
+		}
+
 	} else if bytes.Compare(expectedMD5, response.MD5) != 0 {
 		return ConcurrencyError
 	} else {
