@@ -84,7 +84,7 @@ func buildIndexFile(distribution, category, architecture string) manifest.IndexF
 func (this *IndexState) BuildGetRequests() []storage.GetRequest {
 	requests := []storage.GetRequest{}
 	for _, item := range this.items {
-		log.Printf("[INFO] Downloading file from %s.\n", item.file.Path())
+		log.Printf("[INFO] Downloading index file from %s.\n", item.file.Path())
 		requests = append(requests, storage.GetRequest{Path: item.file.Path()})
 	}
 	return requests

@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"errors"
 	"io"
 	"path"
 )
@@ -46,7 +47,28 @@ func (this *SourcesFile) Add(manifest *ManifestFile) bool {
 }
 
 func (this *SourcesFile) Parse(reader io.Reader) error {
-	return nil // TODO
+	this.cachedBytes = nil
+	this.paragraphs = []*Paragraph{}
+	this.packages = map[string]struct{}{}
+
+	paragraphReader := NewReader(reader)
+
+	for {
+		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		} else if name, contains := paragraph.allKeys["Package"]; !contains {
+			return errors.New("Malformed manifest file, missing Package element.")
+		} else if version, contains := paragraph.allKeys["Version"]; !contains {
+			return errors.New("Malformed manifest file, missing Version element.")
+		} else {
+			this.packages[name.Value+"_"+version.Value] = struct{}{}
+			this.paragraphs = append(this.paragraphs, paragraph)
+		}
+	}
+
+	return nil
 }
 
 func (this *SourcesFile) Bytes() []byte {
