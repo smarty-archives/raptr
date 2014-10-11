@@ -97,8 +97,9 @@ func (this *ReleaseFile) Parse(reader io.Reader) error {
 	}
 
 	for _, item := range parsed {
+		unique := item
 		this.items = append(this.items, func() ReleaseItem {
-			return item
+			return unique
 		})
 	}
 
