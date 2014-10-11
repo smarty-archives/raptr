@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -52,7 +53,7 @@ func (this *ReleaseFile) Bytes() []byte {
 	addLine(paragraph, "Architectures", strings.Join(this.architectures, " "))
 	addLine(paragraph, "Components", strings.Join(this.categories, " "))
 	addLine(paragraph, "Date", time.Now().UTC().Format(time.RFC1123))
-	addLine(paragraph, "Description", "") // TODO:
+	addLine(paragraph, "Description", "none")
 	addLine(paragraph, "Origin", "raptr")
 	addLine(paragraph, "Suite", this.distribution)
 
@@ -63,25 +64,27 @@ func (this *ReleaseFile) Bytes() []byte {
 	}
 	addLine(paragraph, "MD5Sum", "")
 	for i, item := range this.items {
-		addHashLine(paragraph, item, checksums[i].MD5)
+		this.addHashLine(paragraph, item, checksums[i].MD5)
 	}
 	addLine(paragraph, "SHA1Sum", "")
 	for i, item := range this.items {
-		addHashLine(paragraph, item, checksums[i].SHA1)
+		this.addHashLine(paragraph, item, checksums[i].SHA1)
 	}
 	addLine(paragraph, "SHA256Sum", "")
 	for i, item := range this.items {
-		addHashLine(paragraph, item, checksums[i].SHA256)
+		this.addHashLine(paragraph, item, checksums[i].SHA256)
 	}
 	addLine(paragraph, "SHA512Sum", "")
 	for i, item := range this.items {
-		addHashLine(paragraph, item, checksums[i].SHA512)
+		this.addHashLine(paragraph, item, checksums[i].SHA512)
 	}
 
 	return serializeParagraphs([]*Paragraph{paragraph})
 }
-func addHashLine(paragraph *Paragraph, item IndexFile, checksum []byte) {
-	line := fmt.Sprintf("%x %16d %s", checksum, len(item.Bytes()), item.Path()[1:])
+func (this *ReleaseFile) addHashLine(paragraph *Paragraph, item IndexFile, checksum []byte) {
+	basepath := filepath.Dir(this.Path())
+	relativePath, _ := filepath.Rel(basepath, item.Path())
+	line := fmt.Sprintf("%x %16d %s", checksum, len(item.Bytes()), relativePath)
 	addLine(paragraph, "", line)
 }
 

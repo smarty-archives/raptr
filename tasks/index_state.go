@@ -149,6 +149,7 @@ func (this *IndexState) BuildPutRequests() []storage.PutRequest {
 			Contents:    storage.NewReader(payload),
 			MD5:         md5sum[:],
 			ExpectedMD5: item.previousMD5, // make sure nothing has changed
+			Concurrency: storage.CheckBeforePut | storage.CheckAfterPut,
 		})
 	}
 	return requests
