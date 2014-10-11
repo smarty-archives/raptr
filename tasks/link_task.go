@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/smartystreets/raptr/manifest"
@@ -28,6 +29,10 @@ func (this *LinkTask) Link(category, bundle, version string, distributions ...st
 	manifestPath := manifest.BuildPath(category, bundle, version)
 	log.Println("[INFO] Downloading manifest from", manifestPath)
 	response := this.remote.Get(storage.GetRequest{Path: manifestPath})
+	if response.Error == storage.FileNotFoundError {
+		return fmt.Errorf("No manifest file exists for bundle [%s_%s] in [%s].", bundle, version, category)
+	}
+
 	manifestFile, err := manifest.ParseManifest(response.Contents, category, bundle, version)
 	if err != nil {
 		return err // unable to access or parse remote manifest, e.g. remote unavailable or permissions
