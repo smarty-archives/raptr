@@ -129,7 +129,13 @@ func (this *IndexState) Link(file *manifest.ManifestFile) bool {
 	return added
 }
 func (this *IndexState) GPGSign() error {
-	return nil // TODO
+	releaseFile := this.items[0].file.Bytes()
+	if signature, err := SignDistributionIndex(this.distribution, releaseFile); err != nil {
+		return err
+	} else {
+		this.items = append(this.items, &IndexItem{file: signature})
+		return nil
+	}
 }
 
 func (this *IndexState) BuildPutRequests() []storage.PutRequest {
