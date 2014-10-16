@@ -39,7 +39,9 @@ func (this *IntegrityStorage) Head(request HeadRequest) HeadResponse {
 	}
 }
 func passedIntegrityCheck(expected, actual []byte, contents io.ReadSeeker) ([]byte, bool) {
-	if len(expected) > 0 && len(actual) > 0 && bytes.Compare(expected, actual) != 0 {
+	if len(expected) == 0 {
+		return []byte{}, true
+	} else if len(expected) > 0 && len(actual) > 0 && bytes.Compare(expected, actual) != 0 {
 		return []byte{}, false // expected and actual hashes don't match
 	} else if !contentsMatch(expected, contents) {
 		return []byte{}, false // expected (if it exists), doesn't match the contents
@@ -55,7 +57,7 @@ func passedIntegrityCheck(expected, actual []byte, contents io.ReadSeeker) ([]by
 }
 func contentsMatch(proposed []byte, contents io.ReadSeeker) bool {
 	if contents == nil {
-		return true
+		return true // is this really what we want?
 	} else if len(proposed) == 0 {
 		return true
 	} else if bytes.Compare(proposed, computeHash(contents)) == 0 {
