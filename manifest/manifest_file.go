@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -31,12 +32,11 @@ func NewManifestFile(category, bundle, version string) *ManifestFile {
 }
 func ParseManifest(reader io.Reader, category, bundle, version string) (*ManifestFile, error) {
 	this := NewManifestFile(category, bundle, version)
-	// gzipReader, err := gzip.NewReader(reader)
-	// paragraphReader := NewReader(gzipReader)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	paragraphReader := NewReader(reader)
+	gzipReader, err := gzip.NewReader(reader)
+	paragraphReader := NewReader(gzipReader)
+	if err != nil {
+		return nil, err
+	}
 
 	for {
 		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {
@@ -118,14 +118,21 @@ func (this *ManifestFile) Bytes() []byte {
 }
 func serializeParagraphs(paragraphs []*Paragraph) []byte {
 	buffer := bytes.NewBuffer([]byte{})
-	// gzipWriter, _ := gzip.NewWriterLevel(buffer, gzip.BestCompression)
-
-	// writer := NewWriter(gzipWriter)
 	writer := NewWriter(buffer)
 	for _, paragraph := range paragraphs {
 		paragraph.Write(writer)
 	}
+	return buffer.Bytes()
+}
+func compressAndSerializeParagraphs(paragraphs []*Paragraph) []byte {
+	buffer := bytes.NewBuffer([]byte{})
+	gzipWriter, _ := gzip.NewWriterLevel(buffer, gzip.BestCompression)
 
-	// gzipWriter.Close()
+	writer := NewWriter(gzipWriter)
+	for _, paragraph := range paragraphs {
+		paragraph.Write(writer)
+	}
+
+	gzipWriter.Close()
 	return buffer.Bytes()
 }

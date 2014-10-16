@@ -25,7 +25,7 @@ func NewPackagesFile(distribution, category, architecture string) *PackagesFile 
 	}
 }
 func BuildPackagesFilePath(distribution, category, architecture string) string {
-	return path.Join("/dists/", distribution, category, "binary-"+architecture, "Packages")
+	return path.Join("/dists/", distribution, category, "binary-"+architecture, "Packages.gz")
 }
 
 func (this *PackagesFile) Add(manifest *ManifestFile) bool {
@@ -80,7 +80,7 @@ func (this *PackagesFile) Bytes() []byte {
 		return this.cachedBytes
 	}
 
-	this.cachedBytes = serializeParagraphs(this.paragraphs)
+	this.cachedBytes = compressAndSerializeParagraphs(this.paragraphs)
 	return this.cachedBytes
 }
 

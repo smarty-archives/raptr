@@ -23,7 +23,7 @@ func NewSourcesFile(distribution, category string) *SourcesFile {
 	}
 }
 func BuildSourcesFilePath(distribution, category string) string {
-	return path.Join("/dists/", distribution, category, "source/Sources")
+	return path.Join("/dists/", distribution, category, "source/Sources.gz")
 }
 
 func (this *SourcesFile) Add(manifest *ManifestFile) bool {
@@ -76,7 +76,7 @@ func (this *SourcesFile) Bytes() []byte {
 		return this.cachedBytes
 	}
 
-	this.cachedBytes = serializeParagraphs(this.paragraphs)
+	this.cachedBytes = compressAndSerializeParagraphs(this.paragraphs)
 	return this.cachedBytes
 }
 
