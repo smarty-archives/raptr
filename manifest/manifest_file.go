@@ -33,10 +33,10 @@ func NewManifestFile(category, bundle, version string) *ManifestFile {
 func ParseManifest(reader io.Reader, category, bundle, version string) (*ManifestFile, error) {
 	this := NewManifestFile(category, bundle, version)
 	gzipReader, err := gzip.NewReader(reader)
-	paragraphReader := NewReader(gzipReader)
 	if err != nil {
 		return nil, err
 	}
+	paragraphReader := NewReader(gzipReader)
 
 	for {
 		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {
@@ -65,7 +65,7 @@ func ParseManifest(reader io.Reader, category, bundle, version string) (*Manifes
 	return this, nil
 }
 func BuildPath(category, bundle, version string) string {
-	return path.Join("/pool/", category, bundle[0:1], bundle, version, "manifest")
+	return path.Join("/pool/", category, bundle[0:1], bundle, version, "manifest.gz")
 }
 
 func (this *ManifestFile) Architectures() []string {
@@ -114,7 +114,7 @@ func formatPackageID(name, architecture string) string {
 }
 
 func (this *ManifestFile) Bytes() []byte {
-	return serializeParagraphs(this.paragraphs)
+	return compressAndSerializeParagraphs(this.paragraphs)
 }
 func serializeParagraphs(paragraphs []*Paragraph) []byte {
 	buffer := bytes.NewBuffer([]byte{})

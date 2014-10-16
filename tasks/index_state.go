@@ -3,6 +3,7 @@ package tasks
 import (
 	"crypto/md5"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"sort"
@@ -106,6 +107,7 @@ func (this *IndexState) ReadGetResponses(responses []storage.GetResponse) error 
 		if !found {
 			continue
 		} else if err := item.file.Parse(response.Contents); err != nil {
+			fmt.Println(item.file.Path())
 			return err
 		}
 	}

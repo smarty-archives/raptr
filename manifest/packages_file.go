@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"compress/gzip"
 	"errors"
 	"io"
 	"path"
@@ -55,7 +56,11 @@ func (this *PackagesFile) Parse(reader io.Reader) error {
 	this.paragraphs = []*Paragraph{}
 	this.packages = map[string]struct{}{}
 
-	paragraphReader := NewReader(reader)
+	gzipReader, err := gzip.NewReader(reader)
+	if err != nil {
+		return err
+	}
+	paragraphReader := NewReader(gzipReader)
 
 	for {
 		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {
