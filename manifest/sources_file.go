@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"compress/gzip"
 	"errors"
 	"io"
 	"path"
@@ -24,7 +23,7 @@ func NewSourcesFile(distribution, category string) *SourcesFile {
 	}
 }
 func BuildSourcesFilePath(distribution, category string) string {
-	return path.Join("/dists/", distribution, category, "source/Sources.gz")
+	return path.Join("/dists/", distribution, category, "source/Sources")
 }
 
 func (this *SourcesFile) Add(manifest *ManifestFile) bool {
@@ -52,11 +51,12 @@ func (this *SourcesFile) Parse(reader io.Reader) error {
 	this.paragraphs = []*Paragraph{}
 	this.packages = map[string]struct{}{}
 
-	gzipReader, err := gzip.NewReader(reader)
-	if err != nil {
-		return err
-	}
-	paragraphReader := NewReader(gzipReader)
+	// gzipReader, err := gzip.NewReader(reader)
+	// if err != nil {
+	// 	return err
+	// }
+	// paragraphReader := NewReader(gzipReader)
+	paragraphReader := NewReader(reader)
 
 	for {
 		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {

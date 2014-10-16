@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"bytes"
-	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -32,11 +31,12 @@ func NewManifestFile(category, bundle, version string) *ManifestFile {
 }
 func ParseManifest(reader io.Reader, category, bundle, version string) (*ManifestFile, error) {
 	this := NewManifestFile(category, bundle, version)
-	gzipReader, err := gzip.NewReader(reader)
-	if err != nil {
-		return nil, err
-	}
-	paragraphReader := NewReader(gzipReader)
+	// gzipReader, err := gzip.NewReader(reader)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// paragraphReader := NewReader(gzipReader)
+	paragraphReader := NewReader(reader)
 
 	for {
 		if paragraph, err := ReadParagraph(paragraphReader); err == io.EOF {
@@ -65,7 +65,7 @@ func ParseManifest(reader io.Reader, category, bundle, version string) (*Manifes
 	return this, nil
 }
 func BuildPath(category, bundle, version string) string {
-	return path.Join("/pool/", category, bundle[0:1], bundle, version, "manifest.gz")
+	return path.Join("/pool/", category, bundle[0:1], bundle, version, "manifest")
 }
 
 func (this *ManifestFile) Architectures() []string {
@@ -125,14 +125,15 @@ func serializeParagraphs(paragraphs []*Paragraph) []byte {
 	return buffer.Bytes()
 }
 func compressAndSerializeParagraphs(paragraphs []*Paragraph) []byte {
-	buffer := bytes.NewBuffer([]byte{})
-	gzipWriter, _ := gzip.NewWriterLevel(buffer, gzip.BestCompression)
+	return serializeParagraphs(paragraphs)
+	// buffer := bytes.NewBuffer([]byte{})
+	// gzipWriter, _ := gzip.NewWriterLevel(buffer, gzip.BestCompression)
 
-	writer := NewWriter(gzipWriter)
-	for _, paragraph := range paragraphs {
-		paragraph.Write(writer)
-	}
+	// writer := NewWriter(gzipWriter)
+	// for _, paragraph := range paragraphs {
+	// 	paragraph.Write(writer)
+	// }
 
-	gzipWriter.Close()
-	return buffer.Bytes()
+	// gzipWriter.Close()
+	// return buffer.Bytes()
 }
