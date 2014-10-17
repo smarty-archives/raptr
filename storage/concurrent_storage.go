@@ -44,7 +44,7 @@ func (this *ConcurrentStorage) ensureContents(request PutRequest, concurrency in
 			return response.Error // not found, permissions, unavailable, etc.
 		}
 
-	} else if bytes.Compare(expectedMD5, response.MD5) != 0 {
+	} else if len(expectedMD5) > 0 && bytes.Compare(expectedMD5, response.MD5) != 0 {
 		return ConcurrencyError
 	} else {
 		return nil
