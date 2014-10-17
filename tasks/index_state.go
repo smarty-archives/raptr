@@ -128,6 +128,7 @@ func (this *IndexState) Link(file *manifest.ManifestFile) bool {
 			}
 		}
 	}
+	added = true // for right now, always publish even if nothing's changed
 	return added
 }
 func (this *IndexState) GPGSign() error {
