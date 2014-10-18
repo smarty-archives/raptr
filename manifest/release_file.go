@@ -24,6 +24,7 @@ type ReleaseFile struct {
 	categories    []string
 	architectures []string
 	items         map[string]func() ReleaseItem
+	cached        []byte
 }
 type ReleaseItem struct {
 	RelativePath string
@@ -47,6 +48,7 @@ func BuildReleaseFilePath(distribution string) string {
 }
 
 func (this *ReleaseFile) Add(index IndexFile) bool {
+	this.cached = nil
 	basepath := filepath.Dir(this.Path())
 	relativePath, _ := filepath.Rel(basepath, index.Path())
 
@@ -75,6 +77,7 @@ func (this *ReleaseFile) translateIndexFile(relativePath string, file IndexFile)
 }
 
 func (this *ReleaseFile) Parse(reader io.Reader) error {
+	this.cached = nil
 	this.items = map[string]func() ReleaseItem{}
 
 	paragraph, err := ReadParagraph(NewReader(reader))
@@ -142,6 +145,10 @@ func parseReleaseItem(hashType, unparsed string, parsed map[string]ReleaseItem) 
 }
 
 func (this *ReleaseFile) Bytes() []byte {
+	if this.cached != nil {
+		return this.cached
+	}
+
 	paragraph := NewParagraph()
 
 	addLine(paragraph, "Architectures", strings.Join(this.architectures, " "))
@@ -170,7 +177,8 @@ func (this *ReleaseFile) Bytes() []byte {
 		}
 	}
 
-	return serializeParagraphs([]*Paragraph{paragraph})
+	this.cached = serializeParagraphs([]*Paragraph{paragraph})
+	return this.cached
 }
 
 func (this *ReleaseFile) Path() string {
