@@ -122,10 +122,8 @@ func (this *IndexState) Link(file *manifest.ManifestFile) bool {
 			releaseFile = item.file.(*manifest.ReleaseFile)
 		} else {
 			indexItem := item.file.(manifest.IndexFile)
-			if indexItem.Add(file) {
-				added = true
-				releaseFile.Add(indexItem)
-			}
+			added = indexItem.Add(file) || added
+			releaseFile.Add(indexItem)
 		}
 	}
 	added = true // for right now, always publish even if nothing's changed

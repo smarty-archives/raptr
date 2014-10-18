@@ -51,16 +51,10 @@ func (this *ReleaseFile) Add(index IndexFile) bool {
 	this.cached = nil
 	basepath := filepath.Dir(this.Path())
 	relativePath, _ := filepath.Rel(basepath, index.Path())
-
-	added := false
-	if _, contains := this.items[relativePath]; !contains {
-		added = true
-		relativeFilePath := relativePath // closure guard
-		this.items[index.Path()] = func() ReleaseItem {
-			return this.translateIndexFile(relativeFilePath, index)
-		}
+	this.items[relativePath] = func() ReleaseItem {
+		return this.translateIndexFile(relativePath, index)
 	}
-	return added
+	return true
 }
 func (this *ReleaseFile) translateIndexFile(relativePath string, file IndexFile) ReleaseItem {
 	checksum, _ := ComputeChecksums(bytes.NewBuffer(file.Bytes()))
