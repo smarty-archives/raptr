@@ -47,7 +47,7 @@ func NewSourceFile(fullPath string) (*SourceFile, error) {
 	} else {
 		// TODO: ensure that contents of file agree with filename scheme
 		file := LocalPackageFile{
-			Name:      strings.ToLower(path.Base(fullPath)),
+			Name:      path.Base(fullPath),
 			Length:    uint64(info.Size()),
 			Checksums: computed,
 			Contents:  handle,

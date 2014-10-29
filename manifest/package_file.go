@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/blakesmith/ar"
 )
@@ -50,7 +49,7 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 			architecture: meta.Architecture,
 			paragraph:    paragraph,
 			file: LocalPackageFile{
-				Name:      strings.ToLower(path.Base(fullPath)),
+				Name:      path.Base(fullPath),
 				Length:    uint64(info.Size()),
 				Checksums: computed,
 				Contents:  handle,
@@ -64,7 +63,7 @@ func extractManifest(reader io.Reader) (*Paragraph, error) {
 	for {
 		if archiveHeader, err := archiveReader.Next(); err != nil {
 			return nil, err
-		} else if strings.ToLower(path.Base(archiveHeader.Name)) != "control.tar.gz" {
+		} else if path.Base(archiveHeader.Name) != "control.tar.gz" {
 			continue
 		} else if gzipReader, err := gzip.NewReader(archiveReader); err != nil {
 			return nil, err
@@ -74,7 +73,7 @@ func extractManifest(reader io.Reader) (*Paragraph, error) {
 			for {
 				if fileHeader, err := tarReader.Next(); err != nil {
 					return nil, err
-				} else if strings.ToLower(path.Base(fileHeader.Name)) != "control" {
+				} else if path.Base(fileHeader.Name) != "control" {
 					continue
 				} else if paragraph, err := ReadParagraph(NewReader(tarReader)); err != nil {
 					return nil, err

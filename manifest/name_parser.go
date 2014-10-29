@@ -13,7 +13,7 @@ type ParsedName struct {
 }
 
 func ParseFilename(fullPath string) *ParsedName {
-	filename := strings.ToLower(path.Base(fullPath))
+	filename := path.Base(fullPath)
 	extension := path.Ext(filename)
 	filename = strings.TrimSuffix(filename, extension)
 	if len(extension) > 0 {
