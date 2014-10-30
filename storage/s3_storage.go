@@ -136,7 +136,7 @@ func (this *S3Storage) executeRequest(request *http.Request) (*http.Response, er
 	}
 }
 func parseMD5(encoded string) []byte {
-	if len(encoded) > 1 && strings.HasPrefix(encoded, `"`) {
+	if len(encoded) > 1 && strings.HasPrefix(encoded, `"`) && strings.HasSuffix(encoded, `"`) {
 		encoded = encoded[1 : len(encoded)-1] // strip off leading and trailing quotes
 	}
 
