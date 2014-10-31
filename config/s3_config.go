@@ -30,8 +30,8 @@ func (this s3Config) buildStorage() (storage.Storage, error) {
 		this.RegionName,
 		this.BucketName,
 		this.PathPrefix,
-		os.Getenv("AWS_ACCESS_KEY"),
-		os.Getenv("AWS_SECRET_KEY"))
+		getEnvironmentVariable("AWS_ACCESS_KEY", "AWS_ACCESS_KEY_ID"),
+		getEnvironmentVariable("AWS_SECRET_KEY", "AWS_SECRET_ACCESS_KEY"))
 
 	if this.MaxRetries <= 0 {
 		this.MaxRetries = defaultMaxRetries
@@ -42,6 +42,15 @@ func (this s3Config) buildStorage() (storage.Storage, error) {
 	inner = storage.NewRetryStorage(inner, defaultMaxRetries)
 	inner = storage.NewConcurrentStorage(inner)
 	return inner, nil
+}
+func getEnvironmentVariable(names ...string) string {
+	for _, name := range names {
+		if value := os.Getenv(name); len(value) > 0 {
+			return value
+		}
+	}
+
+	return ""
 }
 
 const defaultMaxRetries = 3
