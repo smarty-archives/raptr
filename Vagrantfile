@@ -9,7 +9,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
   end
-  config.vm.box = "box-cutter/ubuntu1404"
+  config.vm.box = "boxcutter/ubuntu1404"
   config.vm.synced_folder File.join(ENV["GOPATH"],"/src"), "/home/vagrant/src"
   config.vm.synced_folder "~/.identity", "/home/vagrant/.identity"
   config.vm.provision "file", source: "~/.ssh/known_hosts", destination: ".ssh/known_hosts"
