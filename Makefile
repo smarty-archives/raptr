@@ -41,8 +41,8 @@ deb: requires_dpkg debianize
 	@cd "$(CLONE_DIR)"; dpkg-buildpackage -us -uc
 install:
 # when the binary package is installed, this is where the artifact (app) will be installed on the target system.
-	@mkdir -p "$(DESTDIR)/opt/$(PACKAGE_NAME)"
-	@cp "$(GOPATH)/bin/$(PACKAGE_NAME)" "$(DESTDIR)/opt/$(PACKAGE_NAME)"
+	@mkdir -p "$(DESTDIR)/usr/bin/"
+	@cp "$(GOPATH)/bin/$(PACKAGE_NAME)" "$(DESTDIR)/usr/bin/"
 
 requires_tools: requires_scm
 	@go get github.com/joliver/glock
