@@ -4,6 +4,13 @@ SOURCE_NAME := raptr
 SOURCE_VERSION := 0.1
 PACKAGE_NAME := github.com/smartystreets/$(SOURCE_NAME)
 
+compile:
+	go install "$(PACKAGE_NAME)"
+freeze:
+	glock save -n "$(PACKAGE_NAME)" > .dependencies
+restore:
+	cat .dependencies 2> /dev/null | glock sync -n "$(PACKAGE_NAME)"
+
 clean:
 	rm -rf workspace *.tar.?z *.dsc *.deb *.changes
 
@@ -33,10 +40,3 @@ version:
 	git tag -a "$(shell git describe 2>/dev/null | semver)" -m "" 2>/dev/null || true
 
 release: clean version debianize changelog dsc
-
-compile:
-	go install "$(PACKAGE_NAME)"
-freeze:
-	glock save -n "$(PACKAGE_NAME)" > .dependencies
-restore:
-	cat .dependencies 2> /dev/null | glock sync -n "$(PACKAGE_NAME)"
