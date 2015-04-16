@@ -27,7 +27,7 @@ clone: requires_tools clean restore
 	@cp Makefile "$(CLONE_DIR)/src/$(PACKAGE_PATH)"
 tarball: clean clone
 	@tar -c "$(CLONE_DIR)" | gzip -n -9 > "$(PWD)/$(PACKAGE_NAME)_$(shell git describe).tar.gz"
-package: clean restore version deb
+release: clean restore version dsc
 
 dsc: requires_dpkg debianize
 	@dpkg-source -b "$(CLONE_DIR)"
