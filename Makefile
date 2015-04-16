@@ -1,57 +1,46 @@
 #!/usr/bin/make -f
 
-PACKAGE_PATH := $(shell go list)
-PACKAGE_NAME := $(notdir $(PACKAGE_PATH))
-CLONE_DIR := $(PACKAGE_NAME)
+SOURCE_NAME := raptr
+SOURCE_VERSION := 0.1
+PACKAGE_NAME := github.com/smartystreets/$(SOURCE_NAME)
 
-compile: clean
-	@go install
 clean:
-	@go clean -i
-	@rm -rf "$(CLONE_DIR)"
-	@rm -rf debian/files debian/$(PACKAGE_NAME)/ debian/$(PACKAGE_NAME).debhelper.log debian/$(PACKAGE_NAME).substvars
-	@test -d "$(GOPATH)/debian" && (cd "$(GOPATH)" && rm -rf debian/files debian/$(PACKAGE_NAME)/ debian/$(PACKAGE_NAME).debhelper.log debian/$(PACKAGE_NAME).substvars) || echo "" > /dev/null
-	@rm -f $(PACKAGE_NAME)_*
-test:
-	@go test -v ./...
+	rm -rf workspace *.tar.?z *.dsc *.deb *.changes
 
-restore: requires_tools
-	@cat .dependencies 2> /dev/null | glock sync -n "$(PACKAGE_PATH)"
-freeze: requires_tools
-	@glock save -n "$(PACKAGE_PATH)" > .dependencies
+prepare: clean restore
+	mkdir -p workspace
+	cp Releasefile workspace/Makefile
+	clonetree --target=workspace
 
-version: requires_tools clean
-	@git tag -a "$(shell git describe 2>/dev/null | semver)" -m "" 2>/dev/null || true
-clone: requires_tools clean restore
-	@clonetree --target="$(CLONE_DIR)" --makefile="$(PACKAGE_PATH)"
-	@cp Makefile "$(CLONE_DIR)/src/$(PACKAGE_PATH)"
-tarball: clean clone
-	@tar -c "$(CLONE_DIR)" | gzip -n -9 > "$(PWD)/$(PACKAGE_NAME)_$(shell git describe).tar.gz"
-release: clean restore version dsc
+tarball: prepare
 
-dsc: requires_dpkg debianize
-	@dpkg-source -b "$(CLONE_DIR)"
-debianize: requires_scm clone
-	@cp -r debian "$(CLONE_DIR)"
-	@sed -i.bak 's/0\.0\.0/$(shell git describe)/' "$(CLONE_DIR)/debian/changelog"
-	@sed -i.bak 's/none <none@none.com>/$(shell git --no-pager show -s --format="%an <%ae>")/' "$(CLONE_DIR)/debian/changelog"
-	@sed -i.bak 's/Sat, 1 Jan 2000 00:00:00 +0000/$(shell git --no-pager show -s --format="%cD")/' "$(CLONE_DIR)/debian/changelog"
-	@rm "$(CLONE_DIR)/debian/changelog.bak"
-deb: requires_dpkg debianize
-	@cd "$(CLONE_DIR)"; dpkg-buildpackage -us -uc
-install:
-# when the binary package is installed, this is where the artifact (app) will be installed on the target system.
-	@mkdir -p "$(DESTDIR)/usr/bin/"
-	@cp "$(GOPATH)/bin/$(PACKAGE_NAME)" "$(DESTDIR)/usr/bin/"
+debianize:
+	mkdir -p workspace
+	cp -r debian workspace
 
-requires_tools: requires_scm
-	@go get github.com/joliver/glock
-	@go get github.com/smartystreets/go-packaging/semver
-	@go get github.com/smartystreets/go-packaging/clonetree
-requires_scm:
-	@test -d .git || (echo "[ERROR] Operation only allowed on the original (SCM-controlled) instance of the source code." && exit 1)
-requires_dpkg:
-	@which dpkg > /dev/null || (echo "[ERROR] Debian-based dpkg-* commands are not available. Are you running Linux?" && exit 1)
+changelog: debianize
+	@echo "$(SOURCE_NAME) ($(shell git describe)) unstable; urgency=low" > workspace/debian/changelog
+	@echo "\n  * $(shell git rev-parse HEAD)\n" >> workspace/debian/changelog
+	@echo " -- $(shell git --no-pager show -s --format="%an <%ae>")  $(shell git --no-pager show -s --format="%cD")" >> workspace/debian/changelog
 
-%:
-	@echo -n
+dsc: clean tarball debianize changelog
+	dpkg-source -b workspace
+
+deb: dsc
+	cd workspace && dpkg-buildpackage -b -us -uc
+
+version:
+	$(eval PREFIX := $(SOURCE_VERSION)$(shell grep "native" debian/source/format > /dev/null 2>&1 && echo "." || echo "-"))
+	$(eval CURRENT := $(shell git describe 2>/dev/null))
+	$(eval EXPECTED := $(PREFIX)$(shell git tag -l "$(PREFIX)*" | wc -l | xargs expr -1 +))
+	$(eval INCREMENTED := $(PREFIX)$(shell git tag -l "$(PREFIX)*" | wc -l | xargs expr 0 +))
+	@if [ "$(CURRENT)" != "$(EXPECTED)" ]; then git tag -a "$(INCREMENTED)" -m "" 2>/dev/null || true; fi
+
+release: clean version debianize changelog dsc
+
+compile:
+	go install "$(PACKAGE_NAME)"
+freeze:
+	glock save -n "$(PACKAGE_NAME)" > .dependencies
+restore:
+	cat .dependencies 2> /dev/null | glock sync -n "$(PACKAGE_NAME)"
