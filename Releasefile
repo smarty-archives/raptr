@@ -1,14 +1,14 @@
 #!/usr/bin/make -f
 
-SOURCE_NAME := raptr
-PACKAGE_NAME := github.com/smartystreets/$(SOURCE_NAME)
+PACKAGE_NAME := raptr
+PACKAGE_PATH := github.com/smartystreets/$(PACKAGE_NAME)
 
 compile: clean
-	GOPATH="$(PWD)" go install "$(PACKAGE_NAME)"
+	GOPATH="$(PWD)" go install "$(PACKAGE_PATH)"
 
 install:
 	mkdir -p "$(DESTDIR)/usr/bin"
-	cp "bin/$(SOURCE_NAME)" "$(DESTDIR)/usr/bin"
+	cp "bin/$(PACKAGE_NAME)" "$(DESTDIR)/usr/bin"
 
 clean:
 	rm -rf bin pkg
