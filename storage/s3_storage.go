@@ -16,20 +16,18 @@ import (
 )
 
 type S3Storage struct {
-	hostname    string
-	bucketName  string
-	pathPrefix  string
-	credentials awsauth.Credentials
-	client      *http.Client
+	hostname   string
+	bucketName string
+	pathPrefix string
+	client     *http.Client
 }
 
-func NewS3Storage(regionName, bucketName, pathPrefix, accessKey, secretKey string) *S3Storage {
+func NewS3Storage(regionName, bucketName, pathPrefix string) *S3Storage {
 	return &S3Storage{
-		hostname:    resolveHostname(regionName) + ".amazonaws.com",
-		bucketName:  bucketName,
-		pathPrefix:  pathPrefix,
-		credentials: awsauth.Credentials{AccessKeyID: accessKey, SecretAccessKey: secretKey},
-		client:      buildClient(),
+		hostname:   resolveHostname(regionName) + ".amazonaws.com",
+		bucketName: bucketName,
+		pathPrefix: pathPrefix,
+		client:     buildClient(),
 	}
 }
 func resolveHostname(region string) string {
@@ -128,7 +126,7 @@ func (this *S3Storage) newRequest(method, requestPath string, body io.Reader) *h
 	return request
 }
 func (this *S3Storage) executeRequest(request *http.Request) (*http.Response, error) {
-	awsauth.Sign(request, this.credentials)
+	awsauth.Sign(request)
 	if response, err := this.client.Do(request); err != nil {
 		return nil, StorageUnavailableError
 	} else {

@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/smartystreets/raptr/storage"
 )
@@ -25,14 +24,7 @@ func (this s3Config) validate() error {
 }
 
 func (this s3Config) buildStorage() (storage.Storage, error) {
-	// FUTURE: from where else can/should we load security credentials?
-	actual := storage.NewS3Storage(
-		this.RegionName,
-		this.BucketName,
-		this.PathPrefix,
-		getEnvironmentVariable("AWS_ACCESS_KEY", "AWS_ACCESS_KEY_ID"),
-		getEnvironmentVariable("AWS_SECRET_KEY", "AWS_SECRET_ACCESS_KEY"))
-
+	actual := storage.NewS3Storage(this.RegionName, this.BucketName, this.PathPrefix)
 	if this.MaxRetries <= 0 {
 		this.MaxRetries = defaultMaxRetries
 	}
@@ -42,15 +34,6 @@ func (this s3Config) buildStorage() (storage.Storage, error) {
 	inner = storage.NewRetryStorage(inner, defaultMaxRetries)
 	inner = storage.NewConcurrentStorage(inner)
 	return inner, nil
-}
-func getEnvironmentVariable(names ...string) string {
-	for _, name := range names {
-		if value := os.Getenv(name); len(value) > 0 {
-			return value
-		}
-	}
-
-	return ""
 }
 
 const defaultMaxRetries = 3
