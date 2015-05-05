@@ -4,11 +4,13 @@ import (
 	"errors"
 	"log"
 	"os"
+	"time"
 
 	"github.com/smartystreets/raptr/cli"
 	"github.com/smartystreets/raptr/config"
 	"github.com/smartystreets/raptr/manifest"
 	"github.com/smartystreets/raptr/messages"
+	"github.com/smartystreets/raptr/storage"
 	"github.com/smartystreets/raptr/tasks"
 )
 
@@ -73,5 +75,19 @@ func executeLink(configuration config.Configuration, command messages.LinkComman
 	layout := remote.Layout
 	task := tasks.NewLinkTask(remote.Storage, layout.Categories, layout.Architectures)
 
-	return task.Link(command.Distribution, command.Category, command.PackageName, command.PackageVersion)
+	for i := 0; i < maxConcurrencyAttempts; i++ {
+		err := task.Link(command.Distribution, command.Category, command.PackageName, command.PackageVersion)
+		if err == nil {
+			return nil
+		} else if err != storage.ConcurrencyError {
+			return err
+		}
+
+		log.Printf("[WARN] Concurrency error, sleeping before trying again [%d/%d]\n", i+1, maxConcurrencyAttempts)
+		time.Sleep(time.Second * 1)
+	}
+
+	return storage.ConcurrencyError
 }
+
+const maxConcurrencyAttempts = 5
