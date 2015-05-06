@@ -29,7 +29,7 @@ func createCommand() *exec.Cmd {
 	if len(passphrase) == 0 {
 		return exec.Command("gpg", "--armor", "--yes", "--detach-sign")
 	} else {
-		return exec.Command("gpg", "--armor", "--yes", "--detach-sign", "--passphrase", passphrase)
+		return exec.Command("gpg", "--armor", "--yes", "--no-tty", "--detach-sign", "--passphrase", passphrase)
 	}
 }
 
