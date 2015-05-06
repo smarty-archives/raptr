@@ -9,6 +9,6 @@ Vcs-Browser: https://github.com/smartystreets/raptr
 
 Package: raptr
 Architecture: amd64
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, gpg
 Description: Debian APT repository manager.
  Utilizes to administrate remote APT repositories.
