@@ -53,7 +53,7 @@ func TestLineItem(t *testing.T) {
 			})
 			So(err, ShouldBeNil)
 		})
-		Convey("It should correctly parse space-prefixed value-only lines", func() {
+		Convey("It should correctly parse tab-prefixed value-only lines", func() {
 			parsed, err := parse("\tnginx deb httpd optional")
 			So(parsed, ShouldResemble, &LineItem{
 				Type:  valueOnly,
