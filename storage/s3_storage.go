@@ -84,6 +84,8 @@ func (this *S3Storage) Get(operation GetRequest) GetResponse {
 	if response, err := this.executeRequest(request); err != nil {
 		return GetResponse{Path: operation.Path, Error: err}
 	} else if payload, err := ioutil.ReadAll(response.Body); err != nil {
+		// io.ReadAll isn't a problem here because we're doing very small downloads
+		// e.g. indexes and signature files
 		response.Body.Close()
 		return GetResponse{Path: operation.Path, Error: StorageUnavailableError}
 	} else {
@@ -126,7 +128,9 @@ func (this *S3Storage) newRequest(method, requestPath string, body io.Reader) *h
 	return request
 }
 func (this *S3Storage) executeRequest(request *http.Request) (*http.Response, error) {
-	awsauth.Sign(request)
+	// don't use Sign4, it reads and replaces the body which can results in out of memory problems
+	// and it can also affect retry
+	awsauth.SignS3(request)
 	if response, err := this.client.Do(request); err != nil {
 		return nil, StorageUnavailableError
 	} else {
