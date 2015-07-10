@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"io"
-	"io/ioutil"
 )
 
 // Ensures the integrity of all files retrieved from the remote
@@ -65,15 +64,19 @@ func contentsMatch(proposed []byte, contents io.ReadSeeker) bool {
 	}
 }
 func computeHash(contents io.ReadSeeker) []byte {
+	// raptr never does large downloads, only small ones
+	// it does however, do really large uploads, but those
+	// utilize the filesystem (with seek capabilities)
+
+	hasher := md5.New()
+
 	if contents == nil {
 		return []byte{}
 	} else if _, err := contents.Seek(0, 0); err != nil {
 		return []byte{} // unable to seek to beginning
-	} else if payload, err := ioutil.ReadAll(contents); err != nil {
+	} else if _, err := io.Copy(hasher, contents); err != nil {
 		return []byte{} // unable to read payload
-	} else if len(payload) == 0 {
-		return []byte{} // empty payload
-	} else if computed := md5.Sum(payload); len(computed) == 0 {
+	} else if computed := hasher.Sum(nil); len(computed) == 0 {
 		return []byte{} // unable to hash
 	} else if _, err := contents.Seek(0, 0); err != nil {
 		return []byte{} // unable to rewind the stream again
