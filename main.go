@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.Llongfile | log.Lmicroseconds)
+
 	if command, configFile := cli.ReadMessage(); command == nil {
 		log.Println("[ERROR] Unable to determine CLI command")
 		os.Exit(1)
