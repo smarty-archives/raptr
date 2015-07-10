@@ -1,7 +1,7 @@
 github.com/blakesmith/ar c9a977dd0cc1392b023382c7bfa5a22af8d3b730
 github.com/docopt/docopt-go c5dac536301992c0371c6115d998fb62944bfad3
 github.com/jtolds/gls 9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690
-github.com/smartystreets/assertions 4727d767ce8a81811c40eedc2a836c85aebb4d09
-github.com/smartystreets/go-aws-auth 6d365883fa65aa18b09a77f1e47ec9cb8bc03d6c
+github.com/smartystreets/assertions 22fd8e1982688f4ff04e8e9ec6feae2c2459460d
+github.com/smartystreets/go-aws-auth b84d3187e4c5c84198d634ab9502bd94cac10d29
 github.com/smartystreets/go-conf 2ce510b587a4cf6964fa4bdf067c290ede42183f
-github.com/smartystreets/goconvey 958443eebb772fc6c1dcc2a44cdc6a59e1b3ff0d
+github.com/smartystreets/goconvey 68c22200a00354e2a63e1a0ade46eadd20e00333
