@@ -102,7 +102,7 @@ func (this *S3Storage) Get(operation GetRequest) GetResponse {
 }
 
 func (this *S3Storage) Put(operation PutRequest) PutResponse {
-	request := this.newRequest("PUT", operation.Path, operation.Contents)
+	request := this.newRequest("PUT", operation.Path, ioutil.NopCloser(operation.Contents))
 	request.ContentLength = int64(operation.Length) // TODO: when this is zero (empty files) the request uses "Transfer-Encoding: Chunked"?!
 	request.Header.Set("Expect", "100-continue")    // send headers before body
 	request.Header.Set("x-amz-server-side-encryption", "AES256")
@@ -134,11 +134,10 @@ func (this *S3Storage) executeRequest(request *http.Request) (*http.Response, er
 	// and it can also affect retry
 	awsauth.SignS3(request)
 	if response, err := this.client.Do(request); err != nil {
-		log.Println("[ERROR]", request.Method, "Request Error:", path.Base(request.URL.Path), err)
+		log.Printf("[ERROR] %s Request Error for [%s]: [%s]\n", request.Method, path.Base(request.URL.Path), err)
 		return nil, StorageUnavailableError
 	} else {
-		log.Println("[ERROR]", request.Method, "Request Result:", path.Base(request.URL.Path), response.Status)
-		return response, parseError(response.StatusCode)
+		return response, parseError(response.StatusCode, response.Body)
 	}
 }
 func parseMD5(encoded string) []byte {
@@ -157,10 +156,11 @@ func parseLength(length string) uint64 {
 	parsed, _ := strconv.ParseUint(length, 10, 64)
 	return parsed
 }
-func parseError(statusCode int) error {
+func parseError(statusCode int, body io.ReadCloser) error {
 	if statusCode == http.StatusOK {
 		return nil
 	} else if statusCode == http.StatusBadRequest { // 400
+		log.Println("[WARN] Bad HTTP Request:", parseBody(body))
 		return ContentIntegrityError
 	} else if statusCode == http.StatusUnauthorized { // 401
 		return AccessDeniedError
@@ -169,6 +169,11 @@ func parseError(statusCode int) error {
 	} else if statusCode == http.StatusNotFound { // 404
 		return FileNotFoundError
 	} else {
+		log.Println("[WARN] Failed HTTP Request:", parseBody(body))
 		return StorageUnavailableError
 	}
+}
+func parseBody(body io.ReadCloser) string {
+	raw, _ := ioutil.ReadAll(body)
+	return string(raw)
 }
