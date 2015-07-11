@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path"
 	"strconv"
@@ -132,8 +133,10 @@ func (this *S3Storage) executeRequest(request *http.Request) (*http.Response, er
 	// and it can also affect retry
 	awsauth.SignS3(request)
 	if response, err := this.client.Do(request); err != nil {
+		log.Println("[ERROR]", request.Method, "Request Error:", path.Base(request.URL.Path), err)
 		return nil, StorageUnavailableError
 	} else {
+		log.Println("[ERROR]", request.Method, "Request Result:", path.Base(request.URL.Path), response.Status)
 		return response, parseError(response.StatusCode)
 	}
 }

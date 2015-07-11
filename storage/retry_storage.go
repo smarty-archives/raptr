@@ -1,5 +1,11 @@
 package storage
 
+import (
+	"errors"
+	"fmt"
+	"path"
+)
+
 // Watches for connection- and mismatch-related errors and retries the
 // operation up to a configured number of times.
 type RetryStorage struct {
@@ -15,6 +21,10 @@ func (this *RetryStorage) Put(request PutRequest) PutResponse {
 	for attempt := 0; ; attempt++ {
 		response := this.inner.Put(request)
 		if !this.canRetry(response.Error, attempt) {
+			return response
+		} else if _, err := request.Contents.Seek(0, 0); err != nil {
+			message := fmt.Sprintf("[ERROR] Unable to rewind stream [%s] for [%s] after upstream PUT failure [%s]\n", err, path.Base(request.Path), response.Error)
+			response.Error = errors.New(message)
 			return response
 		}
 	}

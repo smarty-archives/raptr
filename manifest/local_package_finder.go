@@ -44,7 +44,7 @@ func (this *LocalPackageFinder) Find(directory string) ([]LocalPackage, error) {
 }
 
 func discoverAllPackages(directory string, files []os.FileInfo) chan interface{} {
-	log.Println("Discovering all local packages.")
+	log.Println("[INFO] Discovering all local packages.")
 	result := make(chan interface{}, 256)
 	waiter := sync.WaitGroup{}
 	for _, file := range files {
@@ -58,9 +58,9 @@ func discoverAllPackages(directory string, files []os.FileInfo) chan interface{}
 			waiter.Done()
 		}(path.Join(directory, file.Name()))
 	}
-	log.Println("Waiting for local file parsing...")
+	log.Println("[INFO] Waiting for local file parsing...")
 	waiter.Wait()
-	log.Println("Local file parsing complete.")
+	log.Println("[INFO] Local file parsing complete.")
 	close(result)
 	return result
 }
@@ -76,10 +76,10 @@ func discoverPackage(fullPath string) interface{} {
 func buildLocalPackage(fullPath string) (LocalPackage, error) {
 	switch strings.ToLower(path.Ext(fullPath)) {
 	case ".deb":
-		log.Println("Parsing binary package:", fullPath)
+		log.Println("[INFO] Parsing binary package:", fullPath)
 		return NewPackageFile(fullPath)
 	case ".dsc":
-		log.Println("Parsing source package:", fullPath)
+		log.Println("[INFO] Parsing source package:", fullPath)
 		return NewSourceFile(fullPath)
 	default:
 		return nil, nil

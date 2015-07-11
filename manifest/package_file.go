@@ -30,7 +30,7 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 		return nil, err
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
-	} else if computed, err := ComputeChecksums(handle); err != nil {
+	} else if computed, err := computeChecksums(fullPath, handle); err != nil {
 		handle.Close()
 		return nil, err
 	} else if _, err := handle.Seek(0, 0); err != nil {
@@ -58,10 +58,17 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 		}, nil
 	}
 }
+
+func computeChecksums(fullPath string, reader io.Reader) (Checksum, error) {
+	log.Println("[INFO] Computing checksums for", path.Base(fullPath))
+	defer log.Println("[INFO] Finished computing checksums for", path.Base(fullPath))
+	return ComputeChecksums(reader)
+}
+
 func extractManifest(fullPath string, reader io.Reader) (*Paragraph, error) {
 	archiveReader := ar.NewReader(reader)
 
-	log.Println("Extracting debian/control file from", path.Base(fullPath))
+	log.Println("[INFO] Extracting debian/control file from", path.Base(fullPath))
 
 	for {
 		if archiveHeader, err := archiveReader.Next(); err != nil {

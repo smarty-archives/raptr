@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/md5"
 	"io"
+	"log"
+	"path"
 )
 
 // Ensures the integrity of all files retrieved from the remote
@@ -87,7 +89,10 @@ func computeHash(contents io.ReadSeeker) []byte {
 
 func (this *IntegrityStorage) Put(request PutRequest) PutResponse {
 	if len(request.MD5) == 0 {
+		log.Println("[INFO] Computing hash for", path.Base(request.Path))
 		request.MD5 = computeHash(request.Contents)
+	} else {
+		log.Println("[INFO] Hash already computed for", path.Base(request.Path))
 	}
 
 	return this.inner.Put(request)
