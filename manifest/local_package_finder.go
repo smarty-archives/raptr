@@ -3,6 +3,7 @@ package manifest
 import (
 	"errors"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -20,49 +21,54 @@ func (this *LocalPackageFinder) Find(directory string) ([]LocalPackage, error) {
 		return nil, err
 	}
 
+	version := ""
 	packages := []LocalPackage{}
-	waiter, mutex := sync.WaitGroup{}, sync.Mutex{}
+
+	for item := range discoverAllPackages(directory, files) {
+		if item == nil {
+			continue
+		} else if err, ok := item.(error); ok {
+			return nil, err
+		} else if pkg, ok := item.(LocalPackage); !ok {
+			continue
+		} else if len(version) > 0 && version != pkg.Version() {
+			return nil, errors.New("All package files must share the same version.")
+		} else {
+			packages = append(packages, pkg)
+		}
+	}
+
+	return packages, nil
+}
+
+func discoverAllPackages(directory string, files []os.FileInfo) chan interface{} {
+	result := make(chan interface{}, 256)
+	waiter := sync.WaitGroup{}
 	for _, file := range files {
 		if file.IsDir() {
 			continue
 		}
 
 		waiter.Add(1)
-		go func(fileName string) {
-			pkg, err := buildLocalPackage(directory, fileName)
-			if pkg != nil {
-				mutex.Lock()
-
-				expected := pkg.Version()
-				for _, item := range packages {
-					if expected != item.Version() {
-						err = errors.New("All package files must share the same version.")
-					}
-				}
-
-				packages = append(packages, pkg)
-				mutex.Unlock()
-			}
-			if err != nil {
-				mutex.Lock()
-				err = err
-				mutex.Unlock()
-			}
+		go func(fullPath string) {
+			result <- discoverPackage(fullPath)
 			waiter.Done()
-		}(file.Name())
+		}(path.Join(directory, file.Name()))
 	}
-
 	waiter.Wait()
+	close(result)
+	return result
+}
 
-	if err != nil {
-		return nil, err
+func discoverPackage(fullPath string) interface{} {
+	if pkg, err := buildLocalPackage(fullPath); err != nil {
+		return err
 	} else {
-		return packages, nil
+		return pkg
 	}
 }
 
-func buildLocalPackage(directory, filename string) (LocalPackage, error) {
-	fullPath := path.Join(directory, filename)
+func buildLocalPackage(fullPath string) (LocalPackage, error) {
 	switch strings.ToLower(path.Ext(fullPath)) {
 	case ".deb":
 		return NewPackageFile(fullPath)
