@@ -13,10 +13,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/smartystreets/go-aws-auth"
 )
 
 type S3Storage struct {
+	region     string
 	hostname   string
 	bucketName string
 	pathPrefix string
@@ -25,6 +30,7 @@ type S3Storage struct {
 
 func NewS3Storage(regionName, bucketName, pathPrefix string) *S3Storage {
 	return &S3Storage{
+		region:     regionName,
 		hostname:   resolveHostname(regionName) + ".amazonaws.com",
 		bucketName: bucketName,
 		pathPrefix: pathPrefix,
@@ -102,17 +108,55 @@ func (this *S3Storage) Get(operation GetRequest) GetResponse {
 }
 
 func (this *S3Storage) Put(operation PutRequest) PutResponse {
+	if operation.Length < multiPartSize {
+		return this.putSingle(operation)
+	} else {
+		return this.putMulti(operation)
+	}
+}
+func (this *S3Storage) putSingle(operation PutRequest) PutResponse {
 	request := this.newRequest("PUT", operation.Path, ioutil.NopCloser(operation.Contents))
 	request.ContentLength = int64(operation.Length) // TODO: when this is zero (empty files) the request uses "Transfer-Encoding: Chunked"?!
 	request.Header.Set("Expect", "100-continue")    // send headers before body
-	request.Header.Set("x-amz-server-side-encryption", "AES256")
-	request.Header.Set("Content-Type", "binary/octet-stream")
-	request.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, path.Base(operation.Path))) // correct names for wget/curl/etc
+	request.Header.Set("x-amz-server-side-encryption", encryption)
+	request.Header.Set("Content-Type", contentType)
+	request.Header.Set("Content-Disposition", fmt.Sprintf(contentDispositionFormat, path.Base(operation.Path))) // correct names for wget/curl/etc
 	if len(operation.MD5) > 0 {
 		request.Header.Set("Content-Md5", base64.StdEncoding.EncodeToString(operation.MD5))
 	}
 	_, err := this.executeRequest(request)
 	return PutResponse{Path: operation.Path, MD5: operation.MD5, Error: err}
+}
+func (this *S3Storage) putMulti(operation PutRequest) PutResponse {
+	log.Println("[INFO] Beginning multi-part upload for", path.Base(operation.Path))
+	manager := s3manager.NewUploader(&s3manager.UploadOptions{
+		PartSize:          1024 * 1024 * 100,
+		Concurrency:       32,
+		LeavePartsOnError: false,
+		S3: s3.New(&aws.Config{
+			Credentials: credentials.NewChainCredentials([]credentials.Provider{&credentials.EnvProvider{}, &credentials.EC2RoleProvider{}}),
+			Region:      this.region,
+		}),
+	})
+
+	disposition := fmt.Sprintf(contentDispositionFormat, path.Base(operation.Path))
+	_, err := manager.Upload(&s3manager.UploadInput{
+		Bucket:               &this.bucketName,
+		Key:                  &operation.Path,
+		ContentType:          &contentType,
+		ContentDisposition:   &disposition,
+		ServerSideEncryption: &encryption,
+		Body:                 operation.Contents,
+	})
+
+	if err != nil {
+		log.Printf("[ERROR] Multi-part PUT Request Error for [%s]: [%s]\n", path.Base(operation.Path), err)
+		return PutResponse{Path: operation.Path, MD5: operation.MD5, Error: err}
+	} else {
+		// nil MD5 skips concurrency check (e.g. multiple writers)
+		// but there's no obvious way to get it
+		return PutResponse{Path: operation.Path, MD5: []byte{}, Error: nil}
+	}
 }
 
 func (this *S3Storage) List(operation ListRequest) ListResponse {
@@ -178,3 +222,11 @@ func parseBody(body io.ReadCloser) string {
 	raw, _ := ioutil.ReadAll(body)
 	return string(raw)
 }
+
+const (
+	multiPartSize = 5 * 1024 * 1024 * 1024
+)
+
+var encryption = "AES256"
+var contentType = "binary/octet-stream"
+var contentDispositionFormat = `attachment; filename="%s"`
