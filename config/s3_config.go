@@ -31,7 +31,7 @@ func (this s3Config) buildStorage() (storage.Storage, error) {
 
 	inner := storage.Storage(actual)
 	inner = storage.NewIntegrityStorage(inner)
-	inner = storage.NewRetryStorage(inner, defaultMaxRetries)
+	inner = storage.NewRetryStorage(inner, this.MaxRetries)
 	inner = storage.NewConcurrentStorage(inner)
 	return inner, nil
 }
