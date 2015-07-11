@@ -27,7 +27,7 @@ func (this *ConcurrentStorage) Put(request PutRequest) PutResponse {
 		return PutResponse{Path: request.Path} // no need to upload a duplicate file
 	} else if response := this.inner.Put(request); response.Error != nil {
 		return response // error trying to put contents
-	} else if err := this.ensureContents(request, CheckAfterPut, request.MD5); err != nil {
+	} else if err := this.ensureContents(request, CheckAfterPut, response.MD5); err != nil {
 		return PutResponse{Path: request.Path, Error: err} // md5 differs from expected
 	} else {
 		return response //success

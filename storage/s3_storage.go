@@ -112,8 +112,9 @@ func (this *S3Storage) Put(operation PutRequest) PutResponse {
 		request.Header.Set("Content-Md5", base64.StdEncoding.EncodeToString(operation.MD5))
 	}
 	_, err := this.executeRequest(request)
-	return PutResponse{Path: operation.Path, Error: err}
+	return PutResponse{Path: operation.Path, MD5: operation.MD5, Error: err}
 }
+
 func (this *S3Storage) List(operation ListRequest) ListResponse {
 	// this will be at least one request until we've gathered everything locally
 	panic("Not implemented")

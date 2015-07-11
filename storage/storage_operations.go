@@ -68,6 +68,7 @@ type (
 	// 5. remote/backend unavailable
 	PutResponse struct {
 		Path  string // from the request
+		MD5   []byte
 		Error error
 	}
 )
