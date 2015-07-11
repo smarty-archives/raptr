@@ -77,7 +77,7 @@ func readSourcePackageFiles(fullPath string, paragraph *Paragraph) ([]LocalPacka
 			return nil, err
 		} else if handle, err := os.Open(packageArchive); err != nil {
 			return nil, err
-		} else if computed, err := ComputeChecksums(handle); err != nil {
+		} else if computed, err := computeChecksums(filename, handle); err != nil {
 			handle.Close()
 			return nil, err
 		} else if bytes.Compare(computed.MD5, parsedMD5) != 0 {
