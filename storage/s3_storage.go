@@ -104,6 +104,7 @@ func (this *S3Storage) Get(operation GetRequest) GetResponse {
 func (this *S3Storage) Put(operation PutRequest) PutResponse {
 	request := this.newRequest("PUT", operation.Path, operation.Contents)
 	request.ContentLength = int64(operation.Length) // TODO: when this is zero (empty files) the request uses "Transfer-Encoding: Chunked"?!
+	request.Header.Set("Expect", "100-continue")    // send headers before body
 	request.Header.Set("x-amz-server-side-encryption", "AES256")
 	request.Header.Set("Content-Type", "binary/octet-stream")
 	request.Header.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, path.Base(operation.Path))) // correct names for wget/curl/etc
