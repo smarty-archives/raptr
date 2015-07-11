@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 
@@ -35,7 +36,7 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 	} else if _, err := handle.Seek(0, 0); err != nil {
 		handle.Close()
 		return nil, err
-	} else if paragraph, err := extractManifest(handle); err != nil {
+	} else if paragraph, err := extractManifest(fullPath, handle); err != nil {
 		handle.Close()
 		return nil, err
 	} else if _, err := handle.Seek(0, 0); err != nil {
@@ -57,8 +58,10 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 		}, nil
 	}
 }
-func extractManifest(reader io.Reader) (*Paragraph, error) {
+func extractManifest(fullPath string, reader io.Reader) (*Paragraph, error) {
 	archiveReader := ar.NewReader(reader)
+
+	log.Println("Extracting debian/control file from", path.Base(fullPath))
 
 	for {
 		if archiveHeader, err := archiveReader.Next(); err != nil {
