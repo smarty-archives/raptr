@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/smartystreets/go-aws-auth"
@@ -134,8 +135,8 @@ func (this *S3Storage) putMulti(operation PutRequest) PutResponse {
 		Concurrency:       32,
 		LeavePartsOnError: false,
 		S3: s3.New(&aws.Config{
-			Credentials: credentials.NewChainCredentials([]credentials.Provider{&credentials.EnvProvider{}, &credentials.EC2RoleProvider{}}),
-			Region:      this.region,
+			Credentials: credentials.NewChainCredentials([]credentials.Provider{&credentials.EnvProvider{}, &ec2rolecreds.EC2RoleProvider{}}),
+			Region:      &this.region,
 		}),
 	})
 
