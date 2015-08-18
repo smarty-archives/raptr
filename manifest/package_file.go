@@ -112,6 +112,8 @@ func (this *PackageFile) ToManifest(poolDirectory string) (*Paragraph, error) {
 			this.addChecksumLines(clone, poolDirectory)
 			addLine(clone, item.Key, item.Value)
 			added = true
+		} else if item.Key == normalizeKey("Version") {
+			addLine(clone, item.Key, this.version)
 		} else {
 			addLine(clone, item.Key, item.Value)
 		}
