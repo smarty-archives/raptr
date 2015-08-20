@@ -20,9 +20,7 @@ type SourceFile struct {
 }
 
 func NewSourceFile(fullPath string) (*SourceFile, error) {
-	if meta := ParseFilename(fullPath); meta == nil {
-		return nil, errors.New("The file provided is not a debian binary package.")
-	} else if info, err := os.Stat(fullPath); err != nil {
+	if info, err := os.Stat(fullPath); err != nil {
 		return nil, err
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
@@ -55,7 +53,7 @@ func NewSourceFile(fullPath string) (*SourceFile, error) {
 		files = append([]LocalPackageFile{file}, files...)
 
 		return &SourceFile{
-			name:      meta.Name,
+			name:      paragraph.PackageSource(),
 			version:   paragraph.Version(),
 			files:     files,
 			paragraph: paragraph,

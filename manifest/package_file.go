@@ -3,7 +3,6 @@ package manifest
 import (
 	"archive/tar"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -24,9 +23,7 @@ type PackageFile struct {
 }
 
 func NewPackageFile(fullPath string) (*PackageFile, error) {
-	if meta := ParseFilename(fullPath); meta == nil {
-		return nil, errors.New("The file provided is not a debian binary package.")
-	} else if info, err := os.Stat(fullPath); err != nil {
+	if info, err := os.Stat(fullPath); err != nil {
 		return nil, err
 	} else if handle, err := os.Open(fullPath); err != nil {
 		return nil, err
@@ -45,9 +42,9 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 	} else {
 		// TODO: ensure that contents of internal control file agree with filename scheme
 		return &PackageFile{
-			name:         meta.Name,
+			name:         paragraph.PackageName(),
 			version:      paragraph.Version(),
-			architecture: meta.Architecture,
+			architecture: paragraph.Architecture(),
 			paragraph:    paragraph,
 			file: LocalPackageFile{
 				Name:      path.Base(fullPath),

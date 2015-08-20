@@ -40,15 +40,12 @@ func ReadParagraph(reader *Reader) (*Paragraph, error) {
 	return this, nil
 }
 
-func (this *Paragraph) Name() string {
-	if item, contains := this.allKeys["Package"]; contains {
-		return item.Value
-	} else {
-		return ""
-	}
-}
-func (this *Paragraph) Version() string {
-	if item, contains := this.allKeys["Version"]; contains {
+func (this *Paragraph) PackageName() string   { return this.readKey("Package") }
+func (this *Paragraph) PackageSource() string { return this.readKey("Source") }
+func (this *Paragraph) Version() string       { return this.readKey("Version") }
+func (this *Paragraph) Architecture() string  { return this.readKey("Architecture") }
+func (this *Paragraph) readKey(key string) string {
+	if item, contains := this.allKeys[key]; contains {
 		return item.Value
 	} else {
 		return ""

@@ -32,7 +32,7 @@ func (this *PackagesFile) Add(manifest *ManifestFile) bool {
 	added := false
 	for _, architecture := range []string{this.architecture, "any", "all"} {
 		for _, paragraph := range manifest.architectures[architecture] {
-			name, version := paragraph.Name(), paragraph.Version()
+			name, version := paragraph.PackageName(), paragraph.Version()
 			id := name + "_" + version
 			if id == "_" {
 				continue // bad paragraph

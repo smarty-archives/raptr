@@ -29,7 +29,7 @@ func BuildSourcesFilePath(distribution, category string) string {
 func (this *SourcesFile) Add(manifest *ManifestFile) bool {
 	added := false
 	for _, paragraph := range manifest.architectures["source"] {
-		name, version := paragraph.Name(), paragraph.Version()
+		name, version := paragraph.PackageSource(), paragraph.Version()
 		id := name + "_" + version
 		if id == "_" {
 			continue // bad paragraph
