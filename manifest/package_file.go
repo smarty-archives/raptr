@@ -46,7 +46,7 @@ func NewPackageFile(fullPath string) (*PackageFile, error) {
 		// TODO: ensure that contents of internal control file agree with filename scheme
 		return &PackageFile{
 			name:         meta.Name,
-			version:      meta.Version,
+			version:      paragraph.Version(),
 			architecture: meta.Architecture,
 			paragraph:    paragraph,
 			file: LocalPackageFile{

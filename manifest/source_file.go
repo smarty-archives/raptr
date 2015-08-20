@@ -56,7 +56,7 @@ func NewSourceFile(fullPath string) (*SourceFile, error) {
 
 		return &SourceFile{
 			name:      meta.Name,
-			version:   meta.Version,
+			version:   paragraph.Version(),
 			files:     files,
 			paragraph: paragraph,
 		}, nil

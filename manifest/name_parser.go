@@ -7,7 +7,6 @@ import (
 
 type ParsedName struct {
 	Name         string
-	Version      string
 	Architecture string
 	Container    string // if it exists
 }
@@ -28,7 +27,6 @@ func ParseFilename(fullPath string) *ParsedName {
 		}
 		return &ParsedName{
 			Name:         parts[0],
-			Version:      parts[1],
 			Architecture: parts[2],
 			Container:    extension,
 		}
@@ -38,7 +36,6 @@ func ParseFilename(fullPath string) *ParsedName {
 		}
 		return &ParsedName{
 			Name:         parts[0],
-			Version:      parts[1],
 			Architecture: "source",
 			Container:    extension,
 		}
