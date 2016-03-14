@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/smartystreets/go-conf"
+	"github.com/smartystreets/raptr/conf"
 )
 
 type Configuration struct {

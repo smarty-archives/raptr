@@ -1,9 +1,8 @@
 github.com/aws/aws-sdk-go 87dbf7e29df163bd17d9cea9a03cb75eb8b76d29
 github.com/blakesmith/ar 8bd4349a67f2533b078dbc524689d15dba0f4659
 github.com/docopt/docopt-go 854c423c810880e30b9fecdabb12d54f4a92f9bb
-github.com/jtolds/gls 9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690
-github.com/smartystreets/assertions 01fedaa993c0a9f9aa55111501cd7c81a49e812e
-github.com/smartystreets/go-aws-auth ccb7e739d131656ee3247a4aad6fe4b69ac2b2dc
-github.com/smartystreets/go-conf 2ce510b587a4cf6964fa4bdf067c290ede42183f
-github.com/smartystreets/goconvey 8d46e6d51692cda11b447f0d01ce83a0ad84aeab
+github.com/jtolds/gls 8ddce2a84170772b95dd5d576c48d517b22cac63
+github.com/smartystreets/assertions e9a2f6771d97c709b2f7609fdf89ebde8b64c926
+github.com/smartystreets/go-aws-auth f78c76cb076aa59266151a59f643160ea818fec5
+github.com/smartystreets/goconvey 995f5b2e021c69b8b028ba6d0b05c1dd500783db
 github.com/vaughan0/go-ini a98ad7ee00ec53921f08832bc06ecf7fd600e6a1
