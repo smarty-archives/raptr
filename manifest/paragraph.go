@@ -118,7 +118,7 @@ func normalizeKey(key string) string {
 	} else if key = strings.TrimSpace(strings.ToLower(key)); len(key) == 0 {
 		return key
 	} else if key == "md5sum" {
-		return "MD5Sum"
+		return "MD5sum"
 	} else if key == "sha1" {
 		return "SHA1"
 	} else if key == "sha256" {
