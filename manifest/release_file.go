@@ -83,6 +83,8 @@ func (this *ReleaseFile) Parse(reader io.Reader) error {
 	for _, item := range paragraph.items {
 		if strings.HasSuffix(item.Key, "Sum") {
 			hashType = item.Key[0 : len(item.Key)-3]
+		} else if item.Key == "SHA1" || item.Key == "SHA256" {
+			hashType = item.Key
 		} else if len(hashType) == 0 {
 			continue
 		} else if err := parseReleaseItem(hashType, item.Value, parsed); err != nil {
