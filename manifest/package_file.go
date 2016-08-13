@@ -127,6 +127,7 @@ func (this *PackageFile) addChecksumLines(clone *Paragraph, directory string) {
 	addLine(clone, "MD5sum", fmt.Sprintf("%x", this.file.Checksums.MD5))
 	addLine(clone, "SHA1", fmt.Sprintf("%x", this.file.Checksums.SHA1))
 	addLine(clone, "SHA256", fmt.Sprintf("%x", this.file.Checksums.SHA256))
+	addLine(clone, "SHA512", fmt.Sprintf("%x", this.file.Checksums.SHA512))
 }
 
 func (this *PackageFile) Name() string              { return this.name }
