@@ -62,7 +62,6 @@ func (this *ReleaseFile) translateIndexFile(relativePath string, file IndexFile)
 	checksums["MD5"] = checksum.MD5
 	checksums["SHA1"] = checksum.SHA1
 	checksums["SHA256"] = checksum.SHA256
-	checksums["SHA512"] = checksum.SHA512
 	return ReleaseItem{
 		RelativePath: relativePath,
 		Length:       uint64(len(file.Bytes())),
@@ -163,7 +162,7 @@ func (this *ReleaseFile) Bytes() []byte {
 		releaseItems = append(releaseItems, this.items[key]())
 	}
 
-	for _, hashType := range []string{"MD5", "SHA1", "SHA256", "SHA512"} {
+	for _, hashType := range []string{"MD5", "SHA1", "SHA256"} {
 		if hashType == "MD5" {
 			hashType += "Sum" // MD5Sum vs SHA1, SHA256, etc.
 		}
