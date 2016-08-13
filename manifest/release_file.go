@@ -164,7 +164,11 @@ func (this *ReleaseFile) Bytes() []byte {
 	}
 
 	for _, hashType := range []string{"MD5", "SHA1", "SHA256", "SHA512"} {
-		addLine(paragraph, hashType+"Sum", "")
+		if hashType == "MD5" {
+			hashType += "Sum" // MD5Sum vs SHA1, SHA256, etc.
+		}
+
+		addLine(paragraph, hashType, "")
 		for _, item := range releaseItems {
 			value := fmt.Sprintf("%x %16d %s", item.Checksums[hashType], item.Length, item.RelativePath)
 			addLine(paragraph, "", value)
