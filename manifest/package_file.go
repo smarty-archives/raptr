@@ -124,7 +124,7 @@ func (this *PackageFile) ToManifest(poolDirectory string) (*Paragraph, error) {
 func (this *PackageFile) addChecksumLines(clone *Paragraph, directory string) {
 	addLine(clone, "Filename", path.Join(directory[1:], this.file.Name))
 	addLine(clone, "Size", fmt.Sprintf("%d", this.file.Length))
-	addLine(clone, "MD5sum", fmt.Sprintf("%x", this.file.Checksums.MD5))
+	addLine(clone, "MD5Sum", fmt.Sprintf("%x", this.file.Checksums.MD5))
 	addLine(clone, "SHA1", fmt.Sprintf("%x", this.file.Checksums.SHA1))
 	addLine(clone, "SHA256", fmt.Sprintf("%x", this.file.Checksums.SHA256))
 }
