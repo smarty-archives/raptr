@@ -119,12 +119,12 @@ func normalizeKey(key string) string {
 		return key
 	} else if key == "md5sum" {
 		return "MD5Sum"
-	} else if key == "sha1sum" {
-		return "SHA1Sum"
-	} else if key == "sha256sum" {
-		return "SHA256Sum"
-	} else if key == "sha512sum" {
-		return "SHA512Sum"
+	} else if key == "sha1" {
+		return "SHA1"
+	} else if key == "sha256" {
+		return "SHA256"
+	} else if key == "sha512" {
+		return "SHA512"
 	} else {
 		return strings.Title(key)
 	}
