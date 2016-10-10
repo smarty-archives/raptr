@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"path"
 	"strings"
@@ -12,10 +12,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 )
 
 type S3Storage struct {
@@ -40,7 +40,7 @@ func (this *S3Storage) Head(operation HeadRequest) HeadResponse {
 	}
 
 	if result, err := connection.HeadObject(input); err != nil {
-		return HeadResponse{Path: operation.Path, Error: err}
+		return HeadResponse{Path: operation.Path, Error: parseError(err)}
 	} else {
 		return HeadResponse{
 			Path:   operation.Path,
@@ -50,22 +50,23 @@ func (this *S3Storage) Head(operation HeadRequest) HeadResponse {
 	}
 }
 func (this *S3Storage) Get(operation GetRequest) GetResponse {
-	buffer := []byte{}
 	connection := this.buildS3Client()
-	downloader := s3manager.NewDownloaderWithClient(connection)
-	object := &s3.GetObjectInput{
+	input := &s3.GetObjectInput{
 		Bucket: aws.String(this.bucketName),
 		Key:    aws.String(operation.Path),
 	}
 
-	if read, err := downloader.Download(aws.NewWriteAtBuffer(buffer), object); err != nil {
+	if result, err := connection.GetObject(input); err != nil {
+		return GetResponse{Path: operation.Path, Error: parseError(err)}
+	} else if payload, err := ioutil.ReadAll(result.Body); err != nil {
+		result.Body.Close()
 		return GetResponse{Path: operation.Path, Error: parseError(err)}
 	} else {
 		return GetResponse{
 			Path:     operation.Path,
-			MD5:      md5.New().Sum(buffer)[:],
-			Length:   uint64(read),
-			Contents: NewReader(buffer),
+			MD5:      parseMD5(*result.ETag),
+			Length:   uint64(*result.ContentLength),
+			Contents: NewReader(payload),
 		}
 	}
 }
