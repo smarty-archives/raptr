@@ -28,7 +28,6 @@ type (
 	GetResponse struct {
 		Path     string // from the request
 		MD5      []byte
-		Created  time.Time
 		Length   uint64
 		Contents ReadSeekCloser // we need to be able to read the entire stream multiple times
 		Error    error          // contains not found errors, backend unavailable, etc.
@@ -42,11 +41,10 @@ type (
 	}
 
 	HeadResponse struct {
-		Path    string // from the request
-		MD5     []byte
-		Created time.Time
-		Length  uint64
-		Error   error
+		Path   string // from the request
+		MD5    []byte
+		Length uint64
+		Error  error
 	}
 )
 

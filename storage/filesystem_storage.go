@@ -27,10 +27,9 @@ func (this *FilesystemStorage) Head(request HeadRequest) HeadResponse {
 		return HeadResponse{Path: request.Path, Error: err}
 	} else {
 		return HeadResponse{
-			Path:    request.Path,
-			MD5:     md5hash,
-			Created: info.ModTime(),
-			Length:  uint64(info.Size()),
+			Path:   request.Path,
+			MD5:    md5hash,
+			Length: uint64(info.Size()),
 		}
 	}
 }
@@ -48,7 +47,6 @@ func (this *FilesystemStorage) Get(request GetRequest) GetResponse {
 			Path:     request.Path,
 			Contents: handle, // implements Read/Seek/Close--application must close
 			MD5:      md5hash,
-			Created:  info.ModTime(),
 			Length:   uint64(info.Size()),
 		}
 	}
