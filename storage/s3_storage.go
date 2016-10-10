@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 )
 
 type S3Storage struct {
@@ -115,7 +116,7 @@ func (this *S3Storage) Delete(operation DeleteRequest) DeleteResponse {
 
 func (this *S3Storage) buildS3Client() *s3.S3 {
 	fromEnv := &credentials.EnvProvider{}
-	fromEC2 := &ec2rolecreds.EC2RoleProvider{}
+	fromEC2 := &ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(session.New(&aws.Config{}))}
 	chainCredentials := []credentials.Provider{fromEnv, fromEC2}
 	config := &aws.Config{
 		Region:      aws.String(this.region),
@@ -137,7 +138,7 @@ func parseError(err error) error {
 		switch aerr.Code() {
 		case "NoSuchBucket", "NoSuchKey":
 			return FileNotFoundError
-		case "InvalidAccessKeyId":
+		case "InvalidAccessKeyId", "NoCredentialProviders":
 			return AccessDeniedError
 		}
 	}
