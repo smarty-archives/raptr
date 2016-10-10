@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/smartystreets/go-aws-auth"
 )
@@ -130,15 +130,21 @@ func (this *S3Storage) putSingle(operation PutRequest) PutResponse {
 }
 func (this *S3Storage) putMulti(operation PutRequest) PutResponse {
 	log.Println("[INFO] Beginning multi-part upload for", path.Base(operation.Path))
-	manager := s3manager.NewUploader(&s3manager.UploadOptions{
-		PartSize:          1024 * 1024 * 100,
-		Concurrency:       32,
-		LeavePartsOnError: false,
-		S3: s3.New(&aws.Config{
-			Credentials: credentials.NewChainCredentials([]credentials.Provider{&credentials.EnvProvider{}, &ec2rolecreds.EC2RoleProvider{}}),
-			Region:      &this.region,
-		}),
-	})
+
+	envCredentials := &credentials.EnvProvider{}
+	ec2Credentials := &ec2rolecreds.EC2RoleProvider{}
+	chainCredentials := []credentials.Provider{envCredentials, ec2Credentials}
+
+	config := &aws.Config{
+		Region:      aws.String(this.region),
+		Credentials: credentials.NewChainCredentials(chainCredentials),
+	}
+
+	session := session.New(config)
+	manager := s3manager.NewUploader(session)
+	manager.PartSize = 1024 * 1024 * 100
+	manager.Concurrency = 32
+	manager.LeavePartsOnError = false
 
 	disposition := fmt.Sprintf(contentDispositionFormat, path.Base(operation.Path))
 	_, err := manager.Upload(&s3manager.UploadInput{
