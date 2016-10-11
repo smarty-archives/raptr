@@ -1,8 +1,6 @@
 github.com/aws/aws-sdk-go c0d7d3282e4c14991a4814de7eae4774e388de61
 github.com/blakesmith/ar 8bd4349a67f2533b078dbc524689d15dba0f4659
 github.com/docopt/docopt-go 784ddc588536785e7299f7272f39101f7faccc3f
-github.com/jmespath/go-jmespath bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 github.com/jtolds/gls 8ddce2a84170772b95dd5d576c48d517b22cac63
-github.com/go-ini/ini 6e4869b434bd001f6983749881c7ead3545887d8
 github.com/smartystreets/assertions 2063fd1cc7c975db70502811a34b06ad034ccdf2
 github.com/smartystreets/goconvey 5db88ed452e937f2fd557de6f4f1af7f2eabed0b
