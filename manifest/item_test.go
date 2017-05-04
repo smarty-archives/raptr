@@ -3,97 +3,61 @@ package manifest
 import (
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/smartystreets/assertions/should"
+	"github.com/smartystreets/gunit"
 )
 
-func TestLineItem(t *testing.T) {
-	Convey("When parsing a raw Debian line item", t, func() {
-		Convey("It should correctly parse simple key-value lines", func() {
-			parsed, err := parse("Source: nginx")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  keyValue,
-				Key:   "Source",
-				Value: "nginx",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse simple key-value lines with whitespace", func() {
-			parsed, err := parse("Source:		nginx")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  keyValue,
-				Key:   "Source",
-				Value: "nginx",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse simple key-value lines website URLs", func() {
-			parsed, err := parse("URL: http://google.com/")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  keyValue,
-				Key:   "URL",
-				Value: "http://google.com/",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse key-only lines", func() {
-			parsed, err := parse("Source: ")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  keyOnly,
-				Key:   "Source",
-				Value: "",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse space-prefixed value-only lines", func() {
-			parsed, err := parse(" nginx deb httpd optional")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  valueOnly,
-				Key:   "",
-				Value: "nginx deb httpd optional",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse tab-prefixed value-only lines", func() {
-			parsed, err := parse("\tnginx deb httpd optional")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  valueOnly,
-				Key:   "",
-				Value: "nginx deb httpd optional",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse space-prefixed, value-only lines with a colon character", func() {
-			parsed, err := parse(" See more at http://google.com/")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  valueOnly,
-				Key:   "",
-				Value: "See more at http://google.com/",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse tab-prefixed, value-only lines with a colon character", func() {
-			parsed, err := parse("\tSee more at http://google.com/")
-			So(parsed, ShouldResemble, &LineItem{
-				Type:  valueOnly,
-				Key:   "",
-				Value: "See more at http://google.com/",
-			})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse separator lines", func() {
-			parsed, err := parse("")
-			So(parsed, ShouldResemble, &LineItem{Type: separator})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should correctly parse comment lines", func() {
-			parsed, err := parse("#comment line")
-			So(parsed, ShouldResemble, &LineItem{Type: comment, Value: "#comment line"})
-			So(err, ShouldBeNil)
-		})
-		Convey("It should reject key values containing spaces", func() {
-			parsed, err := parse("Invalid Key: value")
-			So(parsed, ShouldBeNil)
-			So(err, ShouldNotBeNil)
-		})
-	})
+func TestLineItemFixture(t *testing.T) {
+	gunit.Run(new(LineItemFixture), t)
+}
+
+type LineItemFixture struct {
+	*gunit.Fixture
+}
+
+func (this *LineItemFixture) assertParseSuccess(input string, expected *LineItem) {
+	parsed, err := parse(input)
+	this.So(err, should.BeNil)
+	this.So(parsed, should.Resemble, expected)
+}
+
+func (this *LineItemFixture) TestSimpleKeyValueLines() {
+
+	this.assertParseSuccess("Source: nginx", // simple key-value
+		&LineItem{Type: keyValue, Key: "Source", Value: "nginx"})
+
+	this.assertParseSuccess("Source:		nginx", // w/ whitespace
+		&LineItem{Type: keyValue, Key: "Source", Value: "nginx"})
+
+	this.assertParseSuccess("URL: http://google.com/", // URL
+		&LineItem{Type: keyValue, Key: "URL", Value: "http://google.com/"})
+
+	this.assertParseSuccess("Source: ", // Key only
+		&LineItem{Type: keyOnly, Key: "Source", Value: ""})
+
+	this.assertParseSuccess(" nginx deb httpd optional", // space prefixed value-only line
+		&LineItem{Type: valueOnly, Key: "", Value: "nginx deb httpd optional"})
+
+	this.assertParseSuccess("\tnginx deb httpd optional", // tab-prefixed value-only line
+		&LineItem{Type: valueOnly, Key: "", Value: "nginx deb httpd optional"})
+
+	this.assertParseSuccess(" See more at http://google.com/", // space prefixed value-only line w/ colon
+		&LineItem{Type: valueOnly, Key: "", Value: "See more at http://google.com/"})
+
+	this.assertParseSuccess("\tSee more at http://google.com/", // tab prefixed value-only line w/ colon
+		&LineItem{Type: valueOnly, Key: "", Value: "See more at http://google.com/"})
+
+	this.assertParseSuccess("", // separator lines
+		&LineItem{Type: separator})
+
+	this.assertParseSuccess("#comment line", // comment lines
+		&LineItem{Type: comment, Value: "#comment line"})
+
+	this.assertParseFailure("Invalid Key: value")
+}
+
+func (this *LineItemFixture) assertParseFailure(input string) {
+	parsed, err := parse(input)
+	this.So(parsed, should.BeNil)
+	this.So(err, should.NotBeNil)
 }

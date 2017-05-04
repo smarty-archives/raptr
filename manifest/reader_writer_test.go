@@ -7,34 +7,33 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/smartystreets/assertions"
+	"github.com/smartystreets/assertions/should"
 )
 
 func TestReaderWriter(t *testing.T) {
-	Convey("When a Debian is read and then written", t, func() {
-		Convey("The hash should be the same.", func() {
-			stringReader := strings.NewReader(debianFile)
-			reader := NewReader(stringReader)
+	// When a Debian is read and then written
+	// The hash should be the same.
+	stringReader := strings.NewReader(debianFile)
+	reader := NewReader(stringReader)
 
-			readSum := md5.Sum([]byte(debianFile))
+	readSum := md5.Sum([]byte(debianFile))
 
-			buffer := bytes.NewBuffer([]byte{})
-			writer := NewWriter(buffer)
+	buffer := bytes.NewBuffer([]byte{})
+	writer := NewWriter(buffer)
 
-			for {
-				if item, err := reader.Read(); err == io.EOF {
-					break
-				} else if err != nil {
-					panic(err)
-				} else {
-					writer.Write(item)
-				}
-			}
+	for {
+		if item, err := reader.Read(); err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
+		} else {
+			writer.Write(item)
+		}
+	}
 
-			writeSum := md5.Sum(buffer.Bytes())
-			So(readSum, ShouldResemble, writeSum)
-		})
-	})
+	writeSum := md5.Sum(buffer.Bytes())
+	assertions.New(t).So(readSum, should.Resemble, writeSum)
 }
 
 const debianFile = `Format: 3.0 (quilt)
