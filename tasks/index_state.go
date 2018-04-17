@@ -130,10 +130,12 @@ func (this *IndexState) Link(file *manifest.ManifestFile) bool {
 }
 func (this *IndexState) GPGSign() error {
 	releaseFile := this.items[0].file.Bytes()
-	if signature, err := SignDistributionIndex(this.distribution, releaseFile); err != nil {
+	if signatures, err := SignDistributionIndex(this.distribution, releaseFile); err != nil {
 		return err
 	} else {
-		this.items = append(this.items, &IndexItem{file: signature})
+		for _, signature := range signatures {
+			this.items = append(this.items, &IndexItem{file: signature})
+		}
 		return nil
 	}
 }
