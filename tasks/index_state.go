@@ -144,13 +144,18 @@ func (this *IndexState) BuildPutRequests() []storage.PutRequest {
 		payload := item.file.Bytes()
 		md5sum := md5.Sum(payload)
 		log.Printf("[INFO] Uploading index to %s.\n", item.file.Path())
+		concurrency := storage.CheckBeforePut | storage.CheckAfterPut
+		if len(item.previousMD5) == 0 {
+			concurrency = storage.CheckAfterPut // no previous MD5, no need to check before put
+		}
+
 		requests = append(requests, storage.PutRequest{
 			Path:        item.file.Path(),
 			Length:      uint64(len(payload)),
 			Contents:    storage.NewReader(payload),
 			MD5:         md5sum[:],
 			ExpectedMD5: item.previousMD5, // make sure nothing has changed
-			Concurrency: storage.CheckBeforePut | storage.CheckAfterPut,
+			Concurrency: concurrency,
 		})
 	}
 	return requests
