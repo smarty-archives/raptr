@@ -23,15 +23,24 @@ func ParseFilename(fullPath string) *ParsedName {
 
 	switch extension {
 	case "deb":
-		if len(parts) != 3 {
+		if len(parts) == 3 {
+			return &ParsedName{
+				Name:         parts[0],
+				Version:      parts[1],
+				Architecture: parts[2],
+				Container:    extension,
+			}
+		} else if len(parts) == 4 {
+			return &ParsedName{
+				Name:         parts[0],
+				Version:      strings.Join([]string{parts[1], parts[2]}, "_"),
+				Architecture: parts[3],
+				Container:    extension,
+			}
+		} else {
 			return nil
 		}
-		return &ParsedName{
-			Name:         parts[0],
-			Version:      parts[1],
-			Architecture: parts[2],
-			Container:    extension,
-		}
+
 	case "dsc":
 		if len(parts) != 2 {
 			return nil
