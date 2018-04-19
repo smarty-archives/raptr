@@ -11,6 +11,7 @@ import (
 	"path"
 
 	"github.com/blakesmith/ar"
+	"github.com/xi2/xz"
 )
 
 // Represents the inner contents of a compiled, debian archive
@@ -73,11 +74,12 @@ func extractManifest(fullPath string, reader io.Reader) (*Paragraph, error) {
 	for {
 		if archiveHeader, err := archiveReader.Next(); err != nil {
 			return nil, err
-		} else if path.Base(archiveHeader.Name) != "control.tar.gz" {
+		} else if !isControlFile(archiveHeader.Name) {
+			fmt.Println(archiveHeader.Name)
 			continue
-		} else if gzipReader, err := gzip.NewReader(archiveReader); err != nil {
+		} else if manifestReader, err := openManifiest(archiveHeader.Name, archiveReader); err != nil {
 			return nil, err
-		} else if tarReader := tar.NewReader(gzipReader); false {
+		} else if tarReader := tar.NewReader(manifestReader); false {
 			continue
 		} else {
 			for {
@@ -92,6 +94,23 @@ func extractManifest(fullPath string, reader io.Reader) (*Paragraph, error) {
 				}
 			}
 		}
+	}
+}
+
+func isControlFile(name string) bool {
+	name = path.Base(name)
+	return name == "control.tar.gz" || name == "control.tar.xz"
+}
+
+func openManifiest(name string, source io.Reader) (io.Reader, error) {
+	switch path.Base(name) {
+	case "control.tar.gz":
+		return gzip.NewReader(source)
+	case "control.tar.xz":
+		return xz.NewReader(source, 0)
+	default:
+		log.Panicln("Unknown/unsupported control file format:", path.Base(name))
+		return nil, nil
 	}
 }
 

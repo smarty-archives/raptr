@@ -5,3 +5,4 @@ github.com/smartystreets/assertions 7678a5452ebea5b7090a6b163f844c133f523da2
 github.com/smartystreets/gunit 6f0d6275bdcdd4411ad1c9b3b69eda55eea5b2db
 github.com/jmespath/go-jmespath c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
 github.com/go-ini/ini ace140f73450505f33e8b8418216792275ae82a7
+github.com/xi2/xz 48954b6210f8d154cb5f8484d3a3e1f83489309e
