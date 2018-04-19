@@ -1,5 +1,5 @@
-github.com/aws/aws-sdk-go ce7c5f65c4030a9a832fd87e550e9c6976db0500
+github.com/aws/aws-sdk-go 57564ea051fab8ccbb8cac2aff285647a1aeefd1
 github.com/blakesmith/ar 8bd4349a67f2533b078dbc524689d15dba0f4659
-github.com/docopt/docopt-go 784ddc588536785e7299f7272f39101f7faccc3f
-github.com/smartystreets/assertions c9ee7d9e9a2aeec0bee7c4a516f3e0ad7cb7e558
-github.com/smartystreets/gunit 565762fde302ff41b49ec296a65a6a4add3c88d5
+github.com/docopt/docopt-go ee0de3bc6815ee19d4a46c7eb90f829db0e014b1
+github.com/smartystreets/assertions 7678a5452ebea5b7090a6b163f844c133f523da2
+github.com/smartystreets/gunit 6f0d6275bdcdd4411ad1c9b3b69eda55eea5b2db
