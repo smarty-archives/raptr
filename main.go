@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/smartystreets/raptr/cli"
@@ -16,7 +15,6 @@ import (
 )
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	log.SetFlags(log.Lshortfile | log.Lmicroseconds)
 
 	if command, configFile := cli.ReadMessage(); command == nil {
