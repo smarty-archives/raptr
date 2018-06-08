@@ -20,7 +20,7 @@ func SignDistributionIndex(distribution string, releaseFile []byte) (*SignatureF
 	errorBuffer := bytes.NewBuffer([]byte{})
 	cmd.Stderr = errorBuffer
 	if payload, err := cmd.Output(); err != nil {
-		log.Println("[ERROR] Unable to sign distribution index: %s\n", string(errorBuffer.Bytes()))
+		log.Printf("[ERROR] Unable to sign distribution index: %s\n", string(errorBuffer.Bytes()))
 		return nil, err
 	} else {
 		fullPath := path.Join("/dists/", distribution, "InRelease")
@@ -32,7 +32,7 @@ func createCommand() *exec.Cmd {
 	if len(passphrase) == 0 {
 		return exec.Command("gpg", "--clearsign", "--detach-sign")
 	} else {
-		return exec.Command("gpg", "--clearsign", "--no-tty", "--batch", "--passphrase", passphrase)
+		return exec.Command("gpg", "--clearsign", "--pinentry-mode", "--no-tty", "--batch", "--passphrase", passphrase)
 	}
 }
 
